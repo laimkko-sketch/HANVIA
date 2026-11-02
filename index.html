@@ -61,6 +61,12 @@ dd{font-variant-numeric:tabular-nums;line-height:1.45}
   display:flex;gap:6px;flex-wrap:wrap;justify-content:center;width:max-content;max-width:calc(100% - 24px)}
 .views button{font:500 12.5px var(--font-body);color:var(--fg);background:var(--chip);border:1px solid var(--line);
   padding:8px 13px;border-radius:999px;cursor:pointer}
+.views button.tour{background:#14306b;color:#fff;border-color:#14306b;font-weight:700}
+.views button.tour.on{background:#c0392b;border-color:#c0392b}
+#tourCap{position:fixed;left:50%;transform:translateX(-50%);top:calc(14px + env(safe-area-inset-top,0px));z-index:30;pointer-events:none;
+  background:rgba(12,22,40,.78);color:#fff;font:600 15px var(--font-body);padding:9px 18px;border-radius:999px;white-space:nowrap;max-width:92vw;overflow:hidden;text-overflow:ellipsis;transition:opacity .4s}
+#tourCap small{font-weight:400;opacity:.75;margin-left:8px}
+#tourCap[hidden]{display:block;opacity:0}
 .views button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .views button:focus-visible,.ctrls input:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .floorbar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(62px + env(safe-area-inset-bottom,0px));
@@ -134,6 +140,7 @@ dd{font-variant-numeric:tabular-nums;line-height:1.45}
 </details>
 
 <div class="views" role="group" aria-label="시점">
+  <button type="button" id="bTour" class="tour">▶ 전체 감상</button>
   <button type="button" data-view="aerial" aria-pressed="true">전체 조감</button>
   <button type="button" data-view="front">행가도어 마당</button>
   <button type="button" data-view="inside">내부·호이스트</button>
@@ -145,6 +152,7 @@ dd{font-variant-numeric:tabular-nums;line-height:1.45}
   <button type="button" data-view="annex">부1동</button>
   <button type="button" data-view="interior">부1동 내부</button>
 </div>
+<div id="tourCap" hidden></div>
 <div class="floorbar" id="floorbar" role="group" aria-label="부1동 층 선택" hidden>
   <span>부1동 내부</span>
   <button type="button" data-floor="0">1층</button>
@@ -1081,11 +1089,92 @@ function go(name,instant=false){
   const v=VIEWS[name](); curView=name;
   const k=(name==='inside'||v.fit)?1:Math.min(viewK(),name==='front'?1.5:2.0);
   if(k>1) v.pos=v.tgt.clone().add(v.pos.clone().sub(v.tgt).multiplyScalar(k));
-  document.querySelectorAll('.views button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view===name)));
+  document.querySelectorAll('.views button[data-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view===name)));
   if(instant||reduced){ camera.position.copy(v.pos); controls.target.copy(v.tgt); controls.update(); return; }
   tween={p0:camera.position.clone(),t0:controls.target.clone(),p1:v.pos,t1:v.tgt,start:performance.now(),dur:1100};
 }
-document.querySelectorAll('.views button').forEach(b=>b.addEventListener('click',()=>go(b.dataset.view)));
+document.querySelectorAll('.views button[data-view]').forEach(b=>b.addEventListener('click',()=>{ stopTour(); go(b.dataset.view); }));
+
+/* ---------- 전체 감상 (자동 카메라 투어) ---------- */
+/* 1) 외곽 동서남북 선회 → 사일로·마당·정문·부1동  2) 지붕·벽 반투명 선회  3) 지붕을 열고 내부 설비를 공정 순서대로 하나씩 3D 선회 */
+const tourCap=document.getElementById('tourCap'), bTour=document.getElementById('bTour');
+let tour=null, roofGlassMats=null;
+function setRoofGlass(on){
+  if(on&&!roofGlassMats){ roofGlassMats=new Map(); roofs.forEach(r=>{ roofGlassMats.set(r,r.material); const m=r.material.clone(); m.transparent=true; m.opacity=0.22; m.depthWrite=false; r.material=m; }); }
+  else if(!on&&roofGlassMats){ roofGlassMats.forEach((m,r)=>{ r.material.dispose(); r.material=m; }); roofGlassMats=null; }
+}
+function setWallGlass(on){ const c=$('tGlass'); if(c.checked!==on){ c.checked=on; c.dispatchEvent(new Event('change')); } }
+function setCranes(on){ cranes.forEach(c=>c.visible=on&&$('tCrane').checked); }
+function setRoofShow(on){ roofs.forEach(r=>r.visible=on); $('tRoof').checked=on; }
+const mbox=(ids)=>{ const b=new THREE.Box3(), t=new THREE.Box3(); ids.forEach(id=>{ const g=A.machine.GROUPS[id]; if(g){ t.setFromObject(g); b.union(t); } }); return b; };
+const north=new THREE.Vector3(0,0,-1);
+function dirName(v){ const a=Math.atan2(v.x,-v.z)*180/Math.PI; const n=['북측','북동측','동측','남동측','남측','남서측','서측','북서측']; return n[((Math.round(a/45)%8)+8)%8]; }
+function buildTour(){
+  const S=[]; const site=BC.clone();
+  // 1. 외곽 360° — 카메라 방위에 따라 '○○에서 본 모습'
+  S.push({cap:p=>`외곽 전경 · ${dirName(p.clone().sub(site))}에서`,orbit:{c:site,r:portrait()?250:175,h:78,a0:Math.PI*0.75,sweep:Math.PI*2,ty:4},dur:32000,setup:()=>{ setRoofGlass(false); setWallGlass(false); setRoofShow(true); }});
+  const still=(name,cap,dur=7000,push=0.18)=>{ const v=VIEWS[name](); return {cap:()=>cap,still:{p0:v.pos,p1:v.pos.clone().lerp(v.tgt,push),t:v.tgt},dur}; };
+  S.push(still('silo','원료 사일로 3기 (경탄 · PVC · 가소제)'));
+  S.push(still('front','행가도어 마당 (주동 남·북측 사이)'));
+  S.push(still('gate','정문 · 명판 · 경비실'));
+  S.push(still('annex','부1동 (식당 · 사무실 · 회의실)'));
+  // 2. 지붕·벽 반투명
+  S.push({cap:p=>`지붕·벽 반투명 · ${dirName(p.clone().sub(site))}에서`,orbit:{c:site,r:portrait()?250:190,h:120,a0:Math.PI*0.25,sweep:Math.PI*1.1,ty:2},dur:20000,setup:()=>{ setRoofGlass(true); setWallGlass(true); }});
+  S.push({cap:()=>'북측동 생산라인 전체 (반투명)',orbit:{c:A.center.clone(),r:110,h:60,a0:-Math.PI*0.6,sweep:Math.PI*0.7,ty:2},dur:12000});
+  // 3. 내부 설비 — 지붕을 열고 공정 순서대로
+  // 내부: 북측동 로컬 좌표(u: X1→X31, y, v: 마당쪽 0 → 북측 25)로 카메라 이동 경로 지정 (설비 옆을 지나가며 3D로 돌아봄)
+  const IN=[
+    ['① 반바리 · 슈퍼믹서 · 2층 자동계량',            [16,10.5,4],[16,10.5,22],[5,6.5,16.5],[5,6.5,19.5]],
+    ['② 압출기 · 스윙컨베어 · 캘린더',                  [7,6.5,23.3],[29,6.5,23.3],[14,1.5,17.7],[21,1.5,17.7]],
+    ['③ 인라인 합지 2층 (라미1~6 · 공정투입 피트)',      [19,5.8,10.6],[49,5.8,10.6],[23,1.2,17.5],[45,1.6,17.5]],
+    ['④ 엠보롤 성형',                                  [41,5,23.3],[58,5,23.3],[46,0.8,17.7],[53,0.8,17.7]],
+    ['⑤ 수세조 · 길로틴 커팅',                          [51,5.5,23.3],[73,5.5,23.3],[55,0.8,17.7],[69,0.8,17.7]],
+    ['⑥ 수조 어닐링 (열탕 → 중탕 → 냉탕 · U-TURN)',    [68,7,23.3],[118,7,23.3],[74,0.6,16.5],[114,0.6,15.0]],
+    ['⑦ UV 코팅 · UV 경화',                            [83,6,2.0],[116,6,2.0],[88,1.2,12.2],[112,1.2,12.2]],
+    ['⑧ 냉탕 수조이송',                                [59,5.8,4.5],[89,5.8,4.5],[64,0.8,12.2],[85,0.8,12.2]],
+    ['⑨ 톰슨프레스 재단 ×2',                           [51,6.5,1.3],[74,6.5,1.3],[57,1.6,7.2],[68,1.6,7.2]],
+    ['⑩ 육안 검사 · 박스 포장',                         [25,6,1.3],[57,6,1.3],[32,1.0,7.0],[52,1.0,7.0]],
+    ['⑪ 자동 래핑 · 완제품 적재',                       [25,7,12.6],[3,7,12.6],[17,0.8,3.5],[8,0.8,6.0]]];
+  IN.forEach(([cap,p0,p1,t0,t1],i)=>S.push({cap:()=>cap,path:{p0,p1,t0,t1},dur:9000,setup:i===0?()=>{ setRoofGlass(false); setRoofShow(false); setWallGlass(true); setCranes(false); }:null}));
+  S.push({cap:()=>'호이스트 4대 (3대 인라인 합지 2층부 집중)',path:{p0:[54,7.6,2.5],p1:[54,7.6,22.5],t0:[30,6.5,10],t1:[30,6.5,15]},dur:10000,setup:()=>setCranes(true)});
+  S.push({cap:()=>'향후 설비 예정 구역 · 바닥 동선',path:{p0:[117,10,2],p1:[117,10,23],t0:[137,0,8],t1:[137,0,17]},dur:9000});
+  S.push({cap:()=>'전체 조감',end:true,dur:2500});
+  return S;
+}
+function stepPose(st,k){ // k: 0..1 진행률 → {p,t}
+  if(st.orbit){ const o=st.orbit, a=o.a0+o.sweep*k; return {p:o.c.clone().add(new THREE.Vector3(Math.cos(a)*o.r,o.h,Math.sin(a)*o.r)),t:o.c.clone().add(new THREE.Vector3(0,o.ty,0))}; }
+  if(st.still) return {p:st.still.p0.clone().lerp(st.still.p1,k),t:st.still.t.clone()};
+  if(st.path){ const q=st.path, e=k<0?0:k>1?1:k, L=(a,b)=>new THREE.Vector3().lerpVectors(new THREE.Vector3(...a),new THREE.Vector3(...b),e).applyMatrix4(A.g.matrix); return {p:L(q.p0,q.p1),t:L(q.t0,q.t1)}; }
+  return null;
+}
+function prepStep(st){
+  if(st.box){ const b=mbox(st.box), c=b.getCenter(new THREE.Vector3()), sz=b.getSize(new THREE.Vector3());
+    const r=Math.min(46,Math.max(sz.x,sz.z)*0.55+7), a0=(st.k%2?0.15:-0.85)*Math.PI;
+    st.orbit={c:c.setY(Math.max(1.5,c.y*0.6)),r,h:Math.min(14,sz.y*0.8+5),a0,sweep:Math.PI*0.7,ty:0}; }
+}
+function startTour(){
+  if(ann.mode==='in') setOutside(); tween=null;
+  tour={S:buildTour(),i:-1,t0:0}; bTour.textContent='■ 감상 정지'; bTour.classList.add('on'); tourCap.hidden=false;
+  document.querySelectorAll('.views button[data-view]').forEach(b=>b.setAttribute('aria-pressed','false'));
+}
+function stopTour(restore=true){
+  if(!tour) return; tour=null; bTour.textContent='▶ 전체 감상'; bTour.classList.remove('on'); tourCap.hidden=true;
+  if(restore){ setRoofGlass(false); setWallGlass(false); setRoofShow(true); setCranes(true); roofAuto=false; }
+}
+function tourTick(now){
+  const T=tour; if(T.i<0||now-T.t0>=T.S[T.i].dur){
+    T.i++; if(T.i>=T.S.length){ stopTour(); go('aerial'); return; }
+    const st=T.S[T.i]; st.setup&&st.setup(); prepStep(st); T.t0=now;
+    if(st.end){ setRoofGlass(false); setWallGlass(false); setRoofShow(true); setCranes(true); go('aerial'); tourCap.innerHTML=st.cap(); return; }
+    st.from={p:camera.position.clone(),t:controls.target.clone()};
+  }
+  const st=T.S[T.i]; if(st.end) return;
+  const k=(now-T.t0)/st.dur, pose=stepPose(st,k), blend=Math.min(1,(now-T.t0)/1800), e=ease(blend);
+  camera.position.lerpVectors(st.from.p,pose.p,e); controls.target.lerpVectors(st.from.t,pose.t,e);
+  tourCap.innerHTML=st.cap(camera.position)+`<small>${T.i+1} / ${T.S.length}</small>`;
+}
+bTour.addEventListener('click',()=>{ tour?stopTour():startTour(); });
+controls.addEventListener('start',()=>{ if(tour) stopTour(); });
 controls.addEventListener('start',()=>{tween=null;});
 
 /* ---------- 부1동 interior mode ---------- */
@@ -1152,9 +1241,10 @@ let lastNow=0; const tmp=new THREE.Vector3(), ease=t=>t<.5?4*t*t*t:1-Math.pow(-2
 renderer.setAnimationLoop(now=>{
   if(tween){ const k=Math.min(1,(now-tween.start)/tween.dur), e=ease(k);
     camera.position.lerpVectors(tween.p0,tween.p1,e); controls.target.lerpVectors(tween.t0,tween.t1,e); if(k>=1) tween=null; }
+  if(tour) tourTick(now);
   controls.update();
   { const inF=FACT.some(f=>{ const q=camera.position.clone().applyMatrix4(f.g.matrix.clone().invert()); return q.x>0&&q.x<L&&q.z>0&&q.z<W&&q.y<RIDGE_T; }); hemi.intensity+=((inF?2.3:1.05)-hemi.intensity)*0.15;
-    const show=inF||!roofs[0].visible||$('tGlass').checked; A.machineRoot.visible=show;
+    const show=inF||!roofs[0].visible||$('tGlass').checked||!!roofGlassMats; A.machineRoot.visible=show;
     const dt=Math.min((now-(lastNow||now))/1000,0.05); lastNow=now; if(show) A.machine.update(dt); }
   renderer.render(scene,camera);
   if(!lblRoot.hidden){ const w=innerWidth,h=innerHeight;
