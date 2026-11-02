@@ -126,7 +126,7 @@ dd{font-variant-numeric:tabular-nums;line-height:1.45}
     <div><dt>정문·펜스</dt><dd>진입로와 대지 내 통로 연결, 문주·차단기 2기·경비실<br>대지 경계 전체 녹색 메쉬펜스 H 1.8 m</dd></div>
     <div><dt>생산 설비</dt><dd>북측동: LVT 인라인 라인 (New Machine V01)<br>반바리·믹서 → 압출·캘린더 → 인라인 합지 2층 → 엠보·수세 → 어닐링 → UV → 톰슨프레스 → 검사·포장 → 래핑 → 적재</dd></div>
     <div><dt>내부 바닥</dt><dd>녹색 에폭시 · <b style="color:#e0b000">노란 선</b> 보행자 통로 · <b>흰 선·화살표</b> 지게차 통로 · 흰 점선 향후 설비 예정 구역</dd></div>
-    <div><dt>원료 사일로</dt><dd><span class="num">160 m³ × 3기</span> · 경탄 / PVC / 가소제<br>주동(북측) X1 고층부 외측</dd></div>
+    <div><dt>원료 사일로</dt><dd><span class="num">160 m³ × 2기</span> 경탄 / PVC<br>가소제 평저 저장탱크 <span class="num">100 m³</span><br>주동(북측) X1 고층부 외측</dd></div>
     <div><dt>부1동</dt><dd><span class="num">23.0 × 11.0 m</span>, 지상 3층<br>1층 식당·주방·접견실 / 2층 사무실·휴게실 / 3층 회의실·방 5실·샤워장</dd></div>
   </dl>
   <div class="ctrls">
@@ -136,7 +136,7 @@ dd{font-variant-numeric:tabular-nums;line-height:1.45}
     <label><input type="checkbox" id="tFlow" checked>설비 동작</label>
     <label><input type="checkbox" id="tLabel" checked>라벨</label>
   </div>
-  <p class="note">주1동·주2동은 배치도에 동 번호가 없어 북측·남측으로 표시했습니다. 부1동은 입면도가 없어 층고 3.6 m를 가정했고, 내부 가구는 실 용도에 맞춰 임의로 배치했습니다. 필지·지목·도로·완충녹지·인접 건물은 배치도 기준이고, 산·수목·논밭 무늬·차량은 이미지 연출용으로 임의 배치했습니다. 사일로(Ø4.6 × 9.8 m, 약 163 m³)와 정문 명판은 도면에 없어 위치를 임의로 정했고, VIDAN 로고는 정식 로고가 나오기 전 임시 디자인입니다.</p>
+  <p class="note">주1동·주2동은 배치도에 동 번호가 없어 북측·남측으로 표시했습니다. 부1동은 입면도가 없어 층고 3.6 m를 가정했고, 내부 가구는 실 용도에 맞춰 임의로 배치했습니다. 필지·지목·도로·완충녹지·인접 건물은 배치도 기준이고, 산·수목·논밭 무늬·차량은 이미지 연출용으로 임의 배치했습니다. 사일로(Ø4.6 × 9.8 m, 약 163 m³)·가소제 탱크(Ø4.2 × 7.3 m, 약 100 m³)와 정문 명판은 도면에 없어 위치를 임의로 정했고, VIDAN 로고는 정식 로고가 나오기 전 임시 디자인입니다.</p>
 </details>
 
 <div class="views" role="group" aria-label="시점">
@@ -435,7 +435,7 @@ function buildFactory(f){
 
 /* ---------- 원료 사일로 3기 (160 m³) — 주동(북측) X1 고층부 외측 ---------- */
 /* 원통 Ø4.6 × 9.8 m (≈163 m³) + 하부 호퍼 콘, 레그 4.2 m, 상부 연결 점검대·사다리·이송배관. 위치는 배치도에 없어 임의 배치 */
-const SILOS=[{n:'경탄',s:'CaCO₃  ·  160 m³',v:4.5},{n:'PVC',s:'PVC RESIN  ·  160 m³',v:12.5},{n:'가소제',s:'PLASTICIZER  ·  160 m³',v:20.5}];
+const SILOS=[{n:'경탄',s:'CaCO₃  ·  160 m³',v:4.5},{n:'PVC',s:'PVC RESIN  ·  160 m³',v:12.5},{n:'가소제',s:'PLASTICIZER  ·  100 m³',v:20.5,tank:true}];
 function buildSilos(f){
   const g=new THREE.Group(); g.matrixAutoUpdate=false; g.matrix.copy(f.g.matrix); world.add(g);
   const R=2.3, LEG=4.2, CONE=3.0, CYL=9.8, U0=-6.2, TOP=LEG+CONE+CYL;
@@ -443,6 +443,32 @@ function buildSilos(f){
   box(7.2,0.5,W-1,M.slab.clone(),U0,0.25,W/2,g,false).material.color.set(0xb9b8b1); // 기초 패드
   for(const s of SILOS){
     const z=s.v;
+    if(s.tank){ // 가소제: 지면에 바로 앉은 평저 수직 저장탱크 (Ø4.2 × 7.3 m ≈ 100 m³) + 상부 원형 안전난간 + 하부 이송펌프
+      const TR=2.1, TH=7.3, ty=0.5;
+      mesh(new THREE.CylinderGeometry(TR,TR,TH,40),M.silo,U0,ty+TH/2,z);
+      mesh(new THREE.CylinderGeometry(TR+0.04,TR+0.04,0.12,40),M.steel,U0,ty+0.06,z);
+      mesh(new THREE.ConeGeometry(TR+0.05,0.45,40),M.silo,U0,ty+TH+0.22,z);
+      for(const y of [ty+1.6,ty+TH-0.3]) mesh(new THREE.CylinderGeometry(TR+0.05,TR+0.05,0.16,40,1,true),M.siloBand,U0,y,z,false);
+      const lab=new THREE.Mesh(new THREE.CylinderGeometry(TR+0.04,TR+0.04,1.3,40,1,true,Math.PI*1.02,Math.PI*0.62),new THREE.MeshStandardMaterial({map:siloLabelTex(s.n,s.s),roughness:.5}));
+      lab.position.set(U0,ty+4.4,z); g.add(lab);
+      // 상부 원형 난간 (노란색)
+      const RR=TR-0.15, rt=ty+TH+0.2;
+      for(const h of [0.55,1.05]){ const r=new THREE.Mesh(new THREE.TorusGeometry(RR,0.03,6,48),M.rail); r.rotation.x=Math.PI/2; r.position.set(U0,rt+h,z); g.add(r); }
+      for(let k=0;k<16;k++){ const a=k/16*Math.PI*2; box(0.05,1.05,0.05,M.rail,U0+Math.cos(a)*RR,rt+0.52,z+Math.sin(a)*RR,g,false); }
+      // 측면 사다리 + 케이지
+      const lz2=z+TR+0.3;
+      for(const a of [-0.25,0.25]) box(0.06,TH+1.3,0.06,M.rail,U0+a,ty+(TH+1.3)/2,lz2,g,false);
+      for(let y=ty+0.3;y<ty+TH+1.2;y+=0.3) box(0.5,0.035,0.035,M.rail,U0,y,lz2,g,false);
+      // 하부 이송펌프 스키드 → X1 박공벽 관통 (2층 계량탱크로)
+      box(1.6,0.25,1.2,M.steel,U0+3.0,0.62,z-1.3,g); box(0.7,0.55,0.5,M.siloBand,U0+2.8,1.0,z-1.3,g); box(0.5,0.4,0.4,M.hook,U0+3.4,0.95,z-1.3,g);
+      const pz=z-0.8;
+      box(1.1,0.14,0.14,M.frame,U0+TR+0.45,1.0,z-1.3,g,false);
+      box(-U0-3.5,0.14,0.14,M.frame,(U0+3.75-0.25)/2,1.0,pz,g,false);
+      box(0.14,13.2-1.0,0.14,M.frame,-0.25,(13.2+1.0)/2,pz,g,false);
+      box(0.14,0.14,0.5,M.frame,U0+3.6,1.0,(pz+z-1.3)/2,g,false);
+      labels.push({el:mk('lbl crane',`가소제 탱크 100 m³`),pos:()=>new THREE.Vector3(U0,ty+TH+2.6,z).applyMatrix4(g.matrix),grp:'silo'});
+      continue;
+    }
     for(const [a,b] of [[-1,-1],[1,-1],[-1,1],[1,1]]) box(0.3,LEG+0.6,0.3,M.steel,U0+a*R*.7,(LEG+0.6)/2,z+b*R*.7,g);
     for(const a of [-1,1]){ box(R*1.4,0.18,0.18,M.steel,U0,LEG*.55,z+a*R*.7,g); box(0.18,0.18,R*1.4,M.steel,U0+a*R*.7,LEG*.55,z,g); }
     mesh(new THREE.CylinderGeometry(R,0.32,CONE,32),M.silo,U0,LEG+CONE/2,z);
@@ -463,9 +489,10 @@ function buildSilos(f){
     labels.push({el:mk('lbl crane',`SILO ${s.n}`),pos:()=>new THREE.Vector3(U0,TOP+2.6,z).applyMatrix4(g.matrix),grp:'silo'});
   }
   // 상부 연결 점검대 + 안전난간
-  box(2.0,0.15,SILOS[2].v-SILOS[0].v+R*2,M.steel,U0,TOP+0.85,W/2,g);
-  for(const a of [-1,1]){ box(0.06,0.06,SILOS[2].v-SILOS[0].v+R*2,M.rail,U0+a*1.0,TOP+1.95,W/2,g,false); box(0.05,0.05,SILOS[2].v-SILOS[0].v+R*2,M.rail,U0+a*1.0,TOP+1.4,W/2,g,false);
-    for(let z=SILOS[0].v-R;z<=SILOS[2].v+R+.01;z+=1.5) box(0.06,1.1,0.06,M.rail,U0+a*1.0,TOP+1.45,z,g,false); }
+  const PV0=SILOS[0].v-R, PV1=SILOS[1].v+R, PL=PV1-PV0, PC=(PV0+PV1)/2; // 점검대: 분체 사일로 2기만 연결
+  box(2.0,0.15,PL,M.steel,U0,TOP+0.85,PC,g);
+  for(const a of [-1,1]){ box(0.06,0.06,PL,M.rail,U0+a*1.0,TOP+1.95,PC,g,false); box(0.05,0.05,PL,M.rail,U0+a*1.0,TOP+1.4,PC,g,false);
+    for(let z=PV0;z<=PV1+.01;z+=1.5) box(0.06,1.1,0.06,M.rail,U0+a*1.0,TOP+1.45,z,g,false); }
   // 수직 사다리 + 등받이 케이지 (남측 사일로)
   const lz=SILOS[0].v-R-0.35;
   for(const a of [-0.25,0.25]) box(0.06,TOP+0.9-LEG,0.06,M.rail,U0+a,LEG+(TOP+0.9-LEG)/2,lz,g,false);
