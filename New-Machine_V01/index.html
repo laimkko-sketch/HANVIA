@@ -152,7 +152,7 @@ const STEPS=[
  {id:'cal',name:'캘린더 압연가공',sub:'4-Bowl ∅24"×76"L',src:'24" CALENDER LINE LAY-OUT (DK-TURK-DE001/002) · 상지 인라인 기초도',dim:'롤 ∅610 × 1,930L × 4 · 메인모터 55kW'},
  {id:'lami',name:'인라인 합지 (적층형)',sub:'공정투입(피트) → 라미1~라미6 · 합판히터 · 2층 언와인더',src:'LAMI003 201014 (LAMINATING 23,062 입면) · 일신케미칼 전체 LAY-OUT (210112)',dim:'캘린더 직후 피트(깊이 2.2m) 언와인더 2롤에서 베이스층 공정투입 → 라미1~라미6 닙 유닛(@3.9m) · 각 라미 상부 2층(EL+2.4m)에 언와인더 2롤(사용/대기), 최상부 약 3.9m · 라미 사이 합판히터(2kW×51EA=102kW 등)로 시트 상부 가열 · 라미3까지 진그레이, 라미4부터 나무무늬 · 2층에서 원단 연결·투입 작업자 상주'},
  {id:'embo',name:'엠보롤 성형',sub:'IR 히터 → 수직 낙하 → 엠보롤·고무롤',src:'LAMI003 201014 · 공정 설명',dim:'라미6 직후 IR 히터판 약 2.5m로 표면 가열 → 제품이 거의 수직으로 떨어지며 한쪽 엠보롤(금속)과 반대쪽 고무롤 닙에서 표면 질감 형성 · 별도 대형 프레임 없음 → 경사 컨베이어로 수세조 이송'},
- {id:'wash',name:'수세조 (냉각)',sub:'1차 수조 냉각',src:'LAMI003 201014 · 인라인 수조 배치도(10.13)',dim:'1차 수조 냉각 7,100'},
+ {id:'wash',name:'수세조 (냉각)',sub:'1차 수조 냉각',src:'LAMI003 201014 · 인라인 수조 배치도(10.13)',dim:'엠보 후 경사 가이드롤 컨베이어로 이송 → 수세조 약 12.3m × 폭 2.8m (1차 수조 냉각 구간)'},
  {id:'cut',name:'원장 커팅 (길로틴)',sub:'Guillotine Cutter',src:'LAMI003 201014',dim:'CUTTING 구간 10,004 (분배 포함)'},
  {id:'anneal',name:'수조 어닐링',sub:'열탕 90℃ → 중탕 50℃ → 냉탕 25℃',src:'인라인 수조 배치도면(2020.10.08/10.13) · LAMI003',dim:'열탕 약 90℃ (2세트 14,500) → 중탕 약 50℃ (2세트 8,040) → 냉탕 약 25℃ (2세트 11,690) · 단계적으로 온도를 낮춰 내부 응력 완화 · 단일 경로 · 90° U-TURN 후 UV 공정'},
  {id:'uvc',name:'UV 코팅',sub:'가열평활기 · 롤코팅기 · 건조기',src:'UV Coating line LAY-OUT (IL SHIN 2020.09.17) · UV7-1400W',dim:'폭 1,420 · 평활기 4m · 건조기 3m'},
@@ -388,16 +388,19 @@ for(const x of [EMB.nx-EMB.r-0.01,EMB.nx+EMB.r+0.01])for(const dz of [-1.0,1.0])
 box(0.9,0.6,0.7,C.orange,EMB.nx-EMB.r,0,ZU-1.6);cyl(0.3,0.8,C.motor,EMB.nx-EMB.r,0.3,ZU-2.35,'z');
 // 엠보 후 테이크오프 롤 + 경사 컨베이어 → 수세조
 cyl(0.09,1.7,C.steel,82.5,0.14,ZU,'z',{m:.9});
-{const x1=82.4,y1=0.22,x2=78.8,y2=0.98;const L=Math.hypot(x1-x2,y2-y1);const bb=box(L,0.08,1.5,C.belt,(x1+x2)/2,(y1+y2)/2-0.04,ZU);bb.rotation.z=-Math.atan2(y2-y1,x1-x2);
- for(const x of [79.4,80.6,81.8])box(0.08,y1+(x1-x)/(x1-x2)*(y2-y1)-0.1,0.08,C.frame,x,0,ZU+0.7),box(0.08,y1+(x1-x)/(x1-x2)*(y2-y1)-0.1,0.08,C.frame,x,0,ZU-0.7);}
-conveyor(75.6,78.8,ZU,1.6,1.0);
+// 엠보 후 경사 가이드롤 컨베이어 → 수세조
+{const x1=82.45,y1=0.2,x2=78.9,y2=0.97,L=Math.hypot(x1-x2,y2-y1),ang=Math.atan2(y2-y1,x1-x2),n=Math.floor(L/0.28);
+ const g=new THREE.CylinderGeometry(0.045,0.045,1.55,12);g.rotateX(Math.PI/2);const im=new THREE.InstancedMesh(g,M(C.roll,{m:.6,r:.35}),n);const mt=new THREE.Matrix4();
+ for(let i=0;i<n;i++){const t=(i+.5)/n;mt.makeTranslation(x1+(x2-x1)*t,y1+(y2-y1)*t-0.06,ZU);im.setMatrixAt(i,mt);}im.castShadow=true;add(im);
+ for(const dz of [-0.8,0.8]){const r=box(L,0.14,0.08,C.frame,(x1+x2)/2,(y1+y2)/2-0.17,ZU+dz);r.rotation.z=-ang;}
+ for(const x of [79.5,80.7,81.9])for(const dz of [-0.8,0.8])box(0.08,y1+(x1-x)/(x1-x2)*(y2-y1)-0.2,0.08,C.frame,x,0,ZU+dz);}
 end();
 
 /* ===== 10. 수세조 ===== */
 begin('wash');
-tank(66.6,75.5,ZU,2.2,1.05,0x3fa7d6);
-for(const x of [68,70.5,73])cyl(0.08,2.2,C.steel,x,1.7,ZU,'z',{m:.8});
-box(1.2,1.4,1.0,0x5e7d9a,71,0,ZU+2.0);
+tank(66.6,78.9,ZU,2.8,1.1,0x3fa7d6);   // 수세조 (가이드롤 구간까지 연장·확대)
+for(const x of [68,70.5,73,75.5,78])cyl(0.08,2.8,C.steel,x,1.7,ZU,'z',{m:.8});
+box(1.2,1.4,1.0,0x5e7d9a,72.7,0,ZU+2.3);
 end();
 
 /* ===== 11. 길로틴 ===== */
@@ -678,7 +681,7 @@ new THREE.TextureLoader().load('floor.jpg',t=>{t.colorSpace=THREE.SRGBColorSpace
 setTimeout(()=>document.getElementById('load').style.display='none',6000);
 
 /* ---------- labels ---------- */
-const LPOS={silo:[147.2,21.5,14.7],f2:[126.3,8.6,9.6],smix:[125.5,9.6,13.6],banb:[125.5,7.4,18.5],ext:[117.2,3.3,15.3],swing:[113.2,2.6,16.6],cal:[111.1,5.0,15.5],lami:[99,5.6,ZU-2.5],embo:[83.7,2.6,ZU],wash:[71,2.7,ZU],cut:[64.7,4.8,ZU],anneal:[40,2.6,ZU],uvc:[23.5,3.3,ZL],uvx:[33,4.2,ZL],wtr:[52,2.4,ZL],press:[69.5,6.4,26],insp:[80.4,3.4,26.0],box:[90.0,3.6,26.0],fork:[0,0,0],wrap:[112.0,3.8,30.5],store:[122.2,4.2,27.3]};
+const LPOS={silo:[147.2,21.5,14.7],f2:[126.3,8.6,9.6],smix:[125.5,9.6,13.6],banb:[125.5,7.4,18.5],ext:[117.2,3.3,15.3],swing:[113.2,2.6,16.6],cal:[111.1,5.0,15.5],lami:[99,5.6,ZU-2.5],embo:[83.7,2.6,ZU],wash:[72.7,2.7,ZU],cut:[64.7,4.8,ZU],anneal:[40,2.6,ZU],uvc:[23.5,3.3,ZL],uvx:[33,4.2,ZL],wtr:[52,2.4,ZL],press:[69.5,6.4,26],insp:[80.4,3.4,26.0],box:[90.0,3.6,26.0],fork:[0,0,0],wrap:[112.0,3.8,30.5],store:[122.2,4.2,27.3]};
 const labelObjs=[];
 STEPS.forEach((s,i)=>{const d=document.createElement('div');d.className='lbl';d.innerHTML=`<i>${i+1}</i>${s.name}`;d.onclick=()=>select(i);
   const o=new CSS2DObject(d);o.position.set(...LPOS[s.id]);scene.add(o);LBL[s.id]=d;labelObjs.push(o);});
@@ -724,7 +727,7 @@ function sheetPiece(a,b,mat,per){const dx=b[0]-a[0],dy=b[1]-a[1],L=Math.hypot(dx
   const m=new THREE.Mesh(g,mat);m.position.set((a[0]+b[0])/2,(a[1]+b[1])/2,ZU);m.rotation.z=Math.atan2(dy,dx);scene.add(m);return m;}
 sheetPiece([LAMI4,1.06],[111,1.06],graySheetM,1.6);
 const nx=EMB.nx;
-for(const [a,b] of [[[nx+0.1,1.06],[LAMI4,1.06]],[[nx,0.98],[nx+0.1,1.06]],[[nx,0.5],[nx,0.98]],[[82.55,0.22],[nx,0.5]],[[78.8,1.0],[82.55,0.22]],[[63,1.06],[78.8,1.0]]])sheetPiece(a,b,woodSheetM,1.8);
+for(const [a,b] of [[[nx+0.1,1.06],[LAMI4,1.06]],[[nx,0.98],[nx+0.1,1.06]],[[nx,0.5],[nx,0.98]],[[82.55,0.22],[nx,0.5]],[[78.9,1.0],[82.55,0.2]],[[63,1.06],[78.9,1.0]]])sheetPiece(a,b,woodSheetM,1.8);
 // 원장 (길로틴 이후 → 어닐링 → U-TURN → UV → 수조이송 → 프레스)
 const uturn=[];for(let i=0;i<=16;i++){const t=Math.PI*i/16;uturn.push([UC.x-UC.r*Math.sin(t),1.06,UC.z-UC.r*Math.cos(t)]);}
 const pathA=polyPath([[64.2,1.06,ZU],[52.6,1.06,ZU],[52.0,0.75,ZU],[19.5,0.75,ZU],[19.0,1.06,ZU],...uturn,[27.9,1.06,ZL],[28.0,1.12,ZL],[38.2,1.12,ZL],[45.4,1.06,ZL],[45.8,0.72,ZL],[58.6,0.72,ZL],[59.0,1.06,ZL],[61.6,1.03,ZL],[61.6,1.03,27.8],[65.1,1.03,27.8]]);
