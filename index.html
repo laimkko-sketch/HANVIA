@@ -898,6 +898,10 @@ CTX.voids.forEach(p=>flat(p,0x7f9a52,.015));
   const inRoad=(x,y)=>CTX.roads.some(r=>inPoly(x,y,r.o));
   const offsetLine=(pts,d)=>pts.map((p,i)=>{ const a=pts[Math.max(0,i-1)], b=pts[Math.min(pts.length-1,i+1)], dx=b[0]-a[0], dy=b[1]-a[1], l=Math.hypot(dx,dy)||1; return [p[0]-dy/l*d, p[1]+dx/l*d]; });
   const dashed=(pts,w,mat,on,off)=>{ for(let i=1;i<pts.length;i++){ const a=pts[i-1],b=pts[i],len=Math.hypot(b[0]-a[0],b[1]-a[1]); for(let s=on*.5;s<len;s+=on+off){ const t0=s/len,t1=Math.min(len,s+on)/len; const mx=a[0]+(b[0]-a[0])*(t0+t1)/2, my=a[1]+(b[1]-a[1])*(t0+t1)/2; if(ROADS.cross.some(c=>Math.hypot(c.c[0]-mx,c.c[1]-my)<4)) continue; strip([a[0]+(b[0]-a[0])*t0,a[1]+(b[1]-a[1])*t0],[a[0]+(b[0]-a[0])*t1,a[1]+(b[1]-a[1])*t1],w,mat); } } };
+  const inCross=(x,y)=>ROADS.cross.some(c=>{ const ax=Math.cos(c.a),ay=Math.sin(c.a),dx=x-c.c[0],dy=y-c.c[1]; return Math.abs(dx*ax+dy*ay)<2.45&&Math.abs(-dx*ay+dy*ax)<c.w/2+0.5; });
+  const solid=(pts,w,mat)=>{ for(let i=1;i<pts.length;i++){ const a=pts[i-1],b=pts[i],len=Math.hypot(b[0]-a[0],b[1]-a[1]),n=Math.max(1,Math.ceil(len/0.2)); let st=null;
+      for(let k=0;k<=n;k++){ const t=k/n, ok=!inCross(a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t);
+        if(ok&&st===null) st=t; if(st!==null&&(!ok||k===n)){ const t1=ok?t:(k-1)/n; if(t1>st) strip([a[0]+(b[0]-a[0])*st,a[1]+(b[1]-a[1])*st],[a[0]+(b[0]-a[0])*t1,a[1]+(b[1]-a[1])*t1],w,mat); st=null; } } } };
   for(const e of ROADS.edges){
     // inward side = the side that lies inside a road polygon
     const a=e[0],b=e[1],dx=b[0]-a[0],dy=b[1]-a[1],l=Math.hypot(dx,dy), mx=(a[0]+b[0])/2, my=(a[1]+b[1])/2, s=inRoad(mx-dy/l*1.5,my+dx/l*1.5)?1:-1;
@@ -910,7 +914,7 @@ CTX.voids.forEach(p=>flat(p,0x7f9a52,.015));
       m.rotation.y=Math.atan2(q[1]-p[1],q[0]-p[0]); m.position.set((p[0]+q[0])/2,.09,-(p[1]+q[1])/2); m.castShadow=m.receiveShadow=true; scene.add(m); }
   }
   for(const c of ROADS.centers){
-    for(const d of [-.22,.22]) dashed(offsetLine(c.p,d),.22,YL,4,0); // 황색 복선 중앙선(횡단보도 구간은 끊김)
+    for(const d of [-.22,.22]) solid(offsetLine(c.p,d),.22,YL); // 황색 복선 중앙선 — 횡단보도(정지선 포함) 구간만 정확히 끊고 끝까지 연결
     if(c.t==='double') for(const d of [-3.7,3.7]) dashed(offsetLine(c.p,d),.22,W,5,8);
   }
   for(const c of ROADS.cross){ const ax=Math.cos(c.a),ay=Math.sin(c.a),nx=-ay,ny=ax;
@@ -1118,8 +1122,13 @@ function buildTour(){
   S.push(still('front','행가도어 마당 (주동 남·북측 사이)'));
   S.push(still('gate','정문 · 명판 · 경비실'));
   S.push(still('annex','부1동 (식당 · 사무실 · 회의실)'));
+  // 부1동 내부 — 층별로 돌아보기
+  [['부1동 1층 · 식당 · 주방 · 접견실',0],['부1동 2층 · 사무실 · 휴게실',1],['부1동 3층 · 회의실 · 방 5실 · 샤워장',2]].forEach(([cap,f])=>{
+    const c=ANNEX.center.clone().add(new THREE.Vector3(0,f*FH+0.6,0));
+    S.push({cap:()=>cap,orbit:{c,r:portrait()?24:19,h:16,a0:Math.PI*(0.9+f*0.35),sweep:Math.PI*0.75,ty:0},dur:9000,setup:()=>setInterior(f,false)});
+  });
   // 2. 지붕·벽 반투명
-  S.push({cap:p=>`지붕·벽 반투명 · ${dirName(p.clone().sub(site))}에서`,orbit:{c:site,r:portrait()?250:190,h:120,a0:Math.PI*0.25,sweep:Math.PI*1.1,ty:2},dur:20000,setup:()=>{ setRoofGlass(true); setWallGlass(true); }});
+  S.push({cap:p=>`지붕·벽 반투명 · ${dirName(p.clone().sub(site))}에서`,orbit:{c:site,r:portrait()?250:190,h:120,a0:Math.PI*0.25,sweep:Math.PI*1.1,ty:2},dur:20000,setup:()=>{ if(ann.mode==='in') setOutside(); setRoofGlass(true); setWallGlass(true); }});
   S.push({cap:()=>'북측동 생산라인 전체 (반투명)',orbit:{c:A.center.clone(),r:110,h:60,a0:-Math.PI*0.6,sweep:Math.PI*0.7,ty:2},dur:12000});
   // 3. 내부 설비 — 지붕을 열고 공정 순서대로
   // 내부: 북측동 로컬 좌표(u: X1→X31, y, v: 마당쪽 0 → 북측 25)로 카메라 이동 경로 지정 (설비 옆을 지나가며 3D로 돌아봄)
@@ -1159,6 +1168,7 @@ function startTour(){
 }
 function stopTour(restore=true){
   if(!tour) return; tour=null; bTour.textContent='▶ 전체 감상'; bTour.classList.remove('on'); tourCap.hidden=true;
+  if(ann.mode==='in') setOutside();
   if(restore){ setRoofGlass(false); setWallGlass(false); setRoofShow(true); setCranes(true); roofAuto=false; }
 }
 function tourTick(now){

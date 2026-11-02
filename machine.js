@@ -293,7 +293,7 @@ end();
 /* ===== 10. 수세조 ===== */
 begin('wash');
 tank(66.6,78.9,ZU,2.8,1.1,0x3fa7d6);   // 수세조 (가이드롤 구간까지 연장·확대)
-for(const x of [68,70.5,73,75.5,78])cyl(0.08,2.8,C.steel,x,1.7,ZU,'z',{m:.8});
+for(const x of [68,70.5,73,75.5,78])cyl(0.08,2.8,C.steel,x,0.66,ZU,'z',{m:.8}); // 누름 가이드롤: 시트를 물속으로 눌러 통과
 box(1.2,1.4,1.0,0x5e7d9a,72.7,0,ZU+2.3);
 end();
 
@@ -424,7 +424,7 @@ for(const [li,L] of LANES.entries()){
     box(0.1,0.32,0.04,0x95a5a6,((IX0+L.dx)+(IX1+L.dx))/2,2.26,L.z+dz);}
   const pl=new THREE.PointLight(0xf2f8ff,6,5,1.6);pl.position.set(((IX0+L.dx)+(IX1+L.dx))/2,2.0,L.z);G.add(pl);
   // 여성 검사원 — 검사대 양쪽
-  for(const x of [(IX0+L.dx)+1.1,(IX1+L.dx)-1.1]){inspector(x,L.z-1.45,1);inspector(x,L.z+1.45,-1,0xc39bd3);}
+  { const x=((IX0+L.dx)+(IX1+L.dx))/2; inspector(x,L.z-1.45,1); inspector(x,L.z+1.45,-1,0xc39bd3); } // 검사원 2명: 컨베이어 사이에 두고 마주보기
 }
 end();
 
@@ -582,7 +582,7 @@ function sheetPiece(a,b,mat,per){const dx=b[0]-a[0],dy=b[1]-a[1],L=Math.hypot(dx
   const m=new THREE.Mesh(g,mat);m.position.set((a[0]+b[0])/2,(a[1]+b[1])/2,ZU);m.rotation.z=Math.atan2(dy,dx);scene.add(m);return m;}
 sheetPiece([LAMI4,1.06],[111,1.06],graySheetM,1.6);
 const nx=EMB.nx;
-for(const [a,b] of [[[nx+0.1,1.06],[LAMI4,1.06]],[[nx,0.98],[nx+0.1,1.06]],[[nx,0.5],[nx,0.98]],[[82.55,0.22],[nx,0.5]],[[78.9,1.0],[82.55,0.2]],[[63,1.06],[78.9,1.0]]])sheetPiece(a,b,woodSheetM,1.8);
+for(const [a,b] of [[[nx+0.1,1.06],[LAMI4,1.06]],[[nx,0.98],[nx+0.1,1.06]],[[nx,0.5],[nx,0.98]],[[82.55,0.22],[nx,0.5]],[[79.3,1.05],[82.55,0.22]],[[78.6,0.55],[79.3,1.05]],[[67.0,0.55],[78.6,0.55]],[[66.3,1.06],[67.0,0.55]],[[63,1.06],[66.3,1.06]]])sheetPiece(a,b,woodSheetM,1.8);
 // 원장 (길로틴 이후 → 어닐링 → U-TURN → UV → 수조이송 → 프레스)
 const uturn=[];for(let i=0;i<=16;i++){const t=Math.PI*i/16;uturn.push([UC.x-UC.r*Math.sin(t),1.06,UC.z-UC.r*Math.cos(t)]);}
 const pathA=polyPath([[64.2,1.06,ZU],[52.6,1.06,ZU],[52.0,0.75,ZU],[19.5,0.75,ZU],[19.0,1.06,ZU],...uturn,[27.9,1.06,ZL],[28.0,1.12,ZL],[38.2,1.12,ZL],[45.4,1.06,ZL],[45.8,0.72,ZL],[58.6,0.72,ZL],[59.0,1.06,ZL],[61.6,1.03,ZL],[61.6,1.03,27.8],[65.1,1.03,27.8]]);
