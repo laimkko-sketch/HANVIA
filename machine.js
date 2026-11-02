@@ -231,7 +231,7 @@ for(const [i,x] of LST.entries()){
 heaterPlate(108.45,110.3);
 for(let i=0;i<LST.length-1;i++)heaterPlate(LST[i+1]+0.55,LST[i]-0.55);
 // 공정투입 피트 (깊이 2.2m) — 베이스층 원단 언와인더 2롤, 수직 상승하여 라미1 닙으로 투입
-{const cx=(PIT.x0+PIT.x1)/2,cz=(PIT.z0+PIT.z1)/2,W=PIT.x1-PIT.x0,D=PIT.z1-PIT.z0,cM=0x8e959c;
+{const cx=(PIT.x0+PIT.x1)/2,cz=(PIT.z0+PIT.z1)/2,W=PIT.x1-PIT.x0,D=PIT.z1-PIT.z0,cM=0x3f4a44;
  box(W,0.1,D,cM,cx,-PIT.d,cz,{r:.95,m:0});
  box(W,PIT.d,0.2,cM,cx,-PIT.d,PIT.z0,{r:.95,m:0});box(W,PIT.d,0.2,cM,cx,-PIT.d,PIT.z1,{r:.95,m:0});
  box(0.2,PIT.d,D,cM,PIT.x0,-PIT.d,cz,{r:.95,m:0});box(0.2,PIT.d,D,cM,PIT.x1,-PIT.d,cz,{r:.95,m:0});

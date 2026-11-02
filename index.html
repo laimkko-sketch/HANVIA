@@ -757,7 +757,7 @@ function installLine(f){
   const mc=buildMachine(root); f.machine=mc; f.machineRoot=root;
   // 공정투입 피트(깊이 2.2 m): 바닥판에 개구부 — 스텐실로 슬래브·지면을 그 자리만 비움
   const pit={u0:131.722-mc.PIT.x1,u1:131.722-mc.PIT.x0,v0:33.2-mc.PIT.z1,v1:33.2-mc.PIT.z0};
-  const hole=new THREE.Mesh(new THREE.PlaneGeometry(pit.u1-pit.u0-0.2,pit.v1-pit.v0-0.2),new THREE.MeshBasicMaterial({colorWrite:false,depthWrite:false,side:THREE.DoubleSide,
+  const hole=new THREE.Mesh(new THREE.PlaneGeometry(pit.u1-pit.u0-0.18,pit.v1-pit.v0-0.18),new THREE.MeshBasicMaterial({colorWrite:false,depthWrite:false,side:THREE.DoubleSide,
     stencilWrite:true,stencilRef:1,stencilFunc:THREE.AlwaysStencilFunc,stencilZPass:THREE.ReplaceStencilOp,stencilFail:THREE.ReplaceStencilOp,stencilZFail:THREE.ReplaceStencilOp}));
   hole.rotation.x=-Math.PI/2; hole.position.set((pit.u0+pit.u1)/2,0.203,(pit.v0+pit.v1)/2); hole.renderOrder=-10; hole.userData.noMask=true; g.add(hole);
   f.pitCenter=new THREE.Vector3((pit.u0+pit.u1)/2,0,(pit.v0+pit.v1)/2);
