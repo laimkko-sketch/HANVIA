@@ -1168,14 +1168,20 @@ function buildTour(){
     ['② 압출기 · 스윙컨베어 · 캘린더',                  [7,6.5,23.3],[29,6.5,23.3],[14,1.5,17.7],[21,1.5,17.7]],
     ['③ 인라인 합지 2층 (라미1~6 · 공정투입 피트)',      [19,5.8,10.6],[49,5.8,10.6],[23,1.2,17.5],[45,1.6,17.5]],
     ['④ 엠보롤 성형',                                  [41,5,23.3],[58,5,23.3],[46,0.8,17.7],[53,0.8,17.7]],
-    ['⑤ 수세조 · 길로틴 커팅',                          [51,5.5,23.3],[73,5.5,23.3],[55,0.8,17.7],[69,0.8,17.7]],
-    ['⑥ 수조 어닐링 (열탕 → 중탕 → 냉탕 · U-TURN)',    [68,7,23.3],[118,7,23.3],[74,0.6,16.5],[114,0.6,15.0]],
-    ['⑦ UV 코팅 · UV 경화',                            [83,6,2.0],[116,6,2.0],[88,1.2,12.2],[112,1.2,12.2]],
-    ['⑧ 냉탕 수조이송',                                [59,5.8,4.5],[89,5.8,4.5],[64,0.8,12.2],[85,0.8,12.2]],
-    ['⑨ 톰슨프레스 재단 ×2',                           [51,6.5,1.3],[74,6.5,1.3],[57,1.6,7.2],[68,1.6,7.2]],
-    ['⑩ 육안 검사 · 박스 포장',                         [25,6,1.3],[57,6,1.3],[32,1.0,7.0],[52,1.0,7.0]],
-    ['⑪ 자동 래핑 · 완제품 적재',                       [25,7,12.6],[3,7,12.6],[17,0.8,3.5],[8,0.8,6.0]]];
-  IN.forEach(([cap,p0,p1,t0,t1],i)=>S.push({cap:()=>cap,path:{p0,p1,t0,t1},dur:9000,setup:i===0?()=>{ setRoofGlass(false); setRoofShow(false); setWallGlass(true); setCranes(false); }:null}));
+    ['⑥ 자동 래핑 · 완제품 적재',                       [25,7,12.6],[3,7,12.6],[17,0.8,3.5],[8,0.8,6.0]]];
+  IN.forEach(([cap,p0,p1,t0,t1],i)=>{
+    S.push({cap:()=>cap,path:{p0,p1,t0,t1},dur:9000,setup:i===0?()=>{ setRoofGlass(false); setRoofShow(false); setWallGlass(true); setCranes(false); }:null});
+    if(i===3){ // ⑤ 수세조 → 어닐링 → UV → 냉탕 → 프레스 → 검사·포장: 제품 흐름을 따라 한 번에 천천히 통과
+      const F=[ // [카메라 u,y,v], [시선 u,y,v], 자막
+        [[50,5.2,22.6],[57,0.8,17.7],'수세조 (수중 냉각)'],[[60,5.2,22.6],[66,0.9,17.7],'길로틴 커팅'],[[72,5.2,22.6],[80,0.7,17.4],'수조 어닐링 · 열탕 90℃'],
+        [[88,5.2,22.6],[96,0.7,17.2],'수조 어닐링 · 중탕 50℃'],[[103,5.4,22.6],[110,0.7,16.8],'수조 어닐링 · 냉탕 25℃'],[[114,5.8,21.5],[116,0.8,15.5],'U-TURN'],
+        [[120.6,6.2,15.5],[114,0.8,13.0],'U-TURN'],[[117,5.6,8.0],[109,1.0,12.2],'UV 코팅'],[[104,5.6,7.6],[96,1.2,12.2],'UV 경화 7조'],
+        [[92,5.6,7.6],[84,1.0,12.2],'UV 자연냉각'],[[80,5.6,7.6],[72,0.8,12.0],'냉탕 수조이송 (≈24℃)'],[[71,6.4,3.2],[64,1.6,8.0],'톰슨프레스 재단 ×2'],
+        [[60,6.4,1.8],[53,1.4,7.0],'톰슨프레스 재단 ×2'],[[50,6.0,1.8],[44,1.0,7.0],'육안 검사 (마주보기 2명)'],[[39,6.0,1.8],[33,1.0,7.0],'박스 포장 · 라벨러'],[[30,6.0,2.2],[26,1.0,7.0],'포장 적재 스테이션']];
+      const cv=c=>new THREE.CatmullRomCurve3(c.map(p=>new THREE.Vector3(...p)),false,'centripetal');
+      S.push({cap:(p,k)=>'⑤ '+F[Math.min(F.length-1,Math.round((k||0)*(F.length-1)))][2]+' — 제품 흐름 따라가기',fly:{cp:cv(F.map(f=>f[0])),ct:cv(F.map(f=>f[1]))},dur:56000});
+    }
+  });
   S.push({cap:()=>'호이스트 4대 (3대 인라인 합지 2층부 집중)',path:{p0:[54,7.6,2.5],p1:[54,7.6,22.5],t0:[30,6.5,10],t1:[30,6.5,15]},dur:10000,setup:()=>setCranes(true)});
   S.push({cap:()=>'향후 설비 예정 구역 · 바닥 동선',path:{p0:[117,10,2],p1:[117,10,23],t0:[137,0,8],t1:[137,0,17]},dur:9000});
   S.push({cap:()=>'전체 조감',end:true,dur:2500});
@@ -1184,6 +1190,7 @@ function buildTour(){
 function stepPose(st,k){ // k: 0..1 진행률 → {p,t}
   if(st.orbit){ const o=st.orbit, a=o.a0+o.sweep*k; return {p:o.c.clone().add(new THREE.Vector3(Math.cos(a)*o.r,o.h,Math.sin(a)*o.r)),t:o.c.clone().add(new THREE.Vector3(0,o.ty,0))}; }
   if(st.still) return {p:st.still.p0.clone().lerp(st.still.p1,k),t:st.still.t.clone()};
+  if(st.fly){ const e=k<0?0:k>1?1:k, sm=e*e*(3-2*e)*0.25+e*0.75; return {p:st.fly.cp.getPoint(sm).applyMatrix4(A.g.matrix),t:st.fly.ct.getPoint(sm).applyMatrix4(A.g.matrix)}; }
   if(st.path){ const q=st.path, e=k<0?0:k>1?1:k, L=(a,b)=>new THREE.Vector3().lerpVectors(new THREE.Vector3(...a),new THREE.Vector3(...b),e).applyMatrix4(A.g.matrix); return {p:L(q.p0,q.p1),t:L(q.t0,q.t1)}; }
   return null;
 }
@@ -1212,7 +1219,7 @@ function tourTick(now){
   const st=T.S[T.i]; if(st.end) return;
   const k=(now-T.t0)/st.dur, pose=stepPose(st,k), blend=Math.min(1,(now-T.t0)/1800), e=ease(blend);
   camera.position.lerpVectors(st.from.p,pose.p,e); controls.target.lerpVectors(st.from.t,pose.t,e);
-  tourCap.innerHTML=st.cap(camera.position)+`<small>${T.i+1} / ${T.S.length}</small>`;
+  tourCap.innerHTML=st.cap(camera.position,k)+`<small>${T.i+1} / ${T.S.length}</small>`;
 }
 bTour.addEventListener('click',()=>{ tour?stopTour():startTour(); });
 controls.addEventListener('start',()=>{ if(tour) stopTour(); });
