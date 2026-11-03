@@ -63,6 +63,17 @@ dd{font-variant-numeric:tabular-nums;line-height:1.45}
   padding:8px 13px;border-radius:999px;cursor:pointer}
 .views button.tour{background:#14306b;color:#fff;border-color:#14306b;font-weight:700}
 .views button.tour.on{background:#c0392b;border-color:#c0392b}
+#tourBar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(66px + env(safe-area-inset-bottom,0px));z-index:31;display:flex;align-items:center;gap:8px;
+  width:min(760px,94vw);padding:8px 12px;border-radius:14px;background:rgba(12,22,40,.82);color:#fff;font:500 12.5px var(--font-body);box-shadow:0 6px 20px rgba(0,0,0,.25)}
+#tourBar[hidden]{display:none}
+#tourBar button{flex:0 0 auto;width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.1);color:#fff;font-size:14px;cursor:pointer;display:grid;place-items:center;padding:0}
+#tourBar button:hover{background:rgba(255,255,255,.25)}
+#tourBar .seek{position:relative;flex:1 1 auto;height:22px;display:flex;align-items:center}
+#tourBar .ticks{position:absolute;left:0;right:0;top:50%;height:10px;transform:translateY(-50%);pointer-events:none}
+#tourBar .ticks i{position:absolute;top:0;width:2px;height:10px;background:rgba(255,255,255,.45);border-radius:1px}
+#tourBar input[type=range]{width:100%;margin:0;accent-color:#f2c200;cursor:pointer;position:relative}
+#tourBar .tm{flex:0 0 auto;font-variant-numeric:tabular-nums;opacity:.9;min-width:84px;text-align:right}
+@media (max-width:640px){#tourBar{bottom:calc(60px + env(safe-area-inset-bottom,0px));gap:6px;padding:6px 8px}#tourBar button{width:30px;height:30px}#tourBar .tm{min-width:70px;font-size:11px}}
 #tourCap{position:fixed;left:50%;transform:translateX(-50%);top:calc(14px + env(safe-area-inset-top,0px));z-index:30;pointer-events:none;
   background:rgba(12,22,40,.78);color:#fff;font:600 15px var(--font-body);padding:9px 18px;border-radius:999px;white-space:nowrap;max-width:92vw;overflow:hidden;text-overflow:ellipsis;transition:opacity .4s}
 #tourCap small{font-weight:400;opacity:.75;margin-left:8px}
@@ -153,6 +164,13 @@ dd{font-variant-numeric:tabular-nums;line-height:1.45}
   <button type="button" data-view="interior">부1동 내부</button>
 </div>
 <div id="tourCap" hidden></div>
+<div id="tourBar" role="group" aria-label="전체 감상 재생 컨트롤" hidden>
+  <button type="button" id="tPrev" title="이전 단계 (←)" aria-label="이전 단계">⏮</button>
+  <button type="button" id="tPlay" title="일시정지/재생 (Space)" aria-label="일시정지">⏸</button>
+  <button type="button" id="tNext" title="다음 단계 (→)" aria-label="다음 단계">⏭</button>
+  <div class="seek"><div class="ticks" id="tTicks"></div><input type="range" id="tSeek" min="0" max="1000" step="1" value="0" aria-label="감상 위치"></div>
+  <span class="tm" id="tTime">0:00 / 0:00</span>
+</div>
 <div class="floorbar" id="floorbar" role="group" aria-label="부1동 층 선택" hidden>
   <span>부1동 내부</span>
   <button type="button" data-floor="0">1층</button>
@@ -1207,30 +1225,66 @@ function prepStep(st){
     const r=Math.min(46,Math.max(sz.x,sz.z)*0.55+7), a0=(st.k%2?0.15:-0.85)*Math.PI;
     st.orbit={c:c.setY(Math.max(1.5,c.y*0.6)),r,h:Math.min(14,sz.y*0.8+5),a0,sweep:Math.PI*0.7,ty:0}; }
 }
+const tourBar=document.getElementById('tourBar'), tSeek=document.getElementById('tSeek'), tTime=document.getElementById('tTime'), tPlay=document.getElementById('tPlay'), tTicks=document.getElementById('tTicks');
+const fmt=ms=>{ const t=Math.max(0,Math.round(ms/1000)); return Math.floor(t/60)+':'+String(t%60).padStart(2,'0'); };
 function startTour(){
   if(ann.mode==='in') setOutside(); tween=null;
-  tour={S:buildTour(),i:-1,t0:0}; bTour.textContent='■ 감상 정지'; bTour.classList.add('on'); tourCap.hidden=false;
+  const S=buildTour(), starts=[]; let acc=0; for(const st of S){ starts.push(acc); acc+=st.dur; }
+  tour={S,starts,total:acc,i:-1,t0:0,paused:false,pauseAt:0,seeking:false};
+  document.getElementById('panel').open=false; // 감상 중에는 설명 패널 접기
+  bTour.textContent='■ 감상 종료'; bTour.classList.add('on'); tourCap.hidden=false; tourBar.hidden=false; tPlay.textContent='⏸';
+  tTicks.innerHTML=starts.slice(1).map(t=>`<i style="left:calc(${(t/acc*100).toFixed(2)}% - 1px)"></i>`).join('');
   document.querySelectorAll('.views button[data-view]').forEach(b=>b.setAttribute('aria-pressed','false'));
 }
 function stopTour(restore=true){
-  if(!tour) return; tour=null; bTour.textContent='▶ 전체 감상'; bTour.classList.remove('on'); tourCap.hidden=true;
+  if(!tour) return; tour=null; bTour.textContent='▶ 전체 감상'; bTour.classList.remove('on'); tourCap.hidden=true; tourBar.hidden=true;
   if(ann.mode==='in') setOutside();
   if(restore){ setRoofGlass(false); setWallGlass(false); setRoofShow(true); setCranes(true); roofAuto=false; }
 }
+// 단계 j의 화면 상태(지붕·벽·호이스트·부1동 층)를 처음부터 다시 적용 → 어느 위치로 건너뛰어도 상태가 맞음
+function applyTourState(j){
+  const T=tour; setRoofGlass(false); setWallGlass(false); setRoofShow(true); setCranes(true); if(ann.mode==='in') setOutside();
+  for(let k=0;k<=j;k++){ const st=T.S[k]; if(st.setup) st.setup(); }
+  if(T.S[j].end){ setRoofGlass(false); setWallGlass(false); setRoofShow(true); setCranes(true); if(ann.mode==='in') setOutside(); }
+}
+function jumpTo(j,offset,now){
+  const T=tour; j=Math.max(0,Math.min(T.S.length-1,j)); const st=T.S[j];
+  if(j!==T.i) applyTourState(j);
+  T.i=j; prepStep(st); T.t0=now-offset; if(T.paused){ T.pauseAt=now; T.snap=true; }
+  st.from={p:camera.position.clone(),t:controls.target.clone()};
+  if(st.end){ tween=null; go('aerial'); }
+}
+function seekTime(ms,now){ const T=tour; ms=Math.max(0,Math.min(T.total-1,ms)); let j=0; while(j+1<T.starts.length&&T.starts[j+1]<=ms) j++; jumpTo(j,ms-T.starts[j],now); }
+function tourStepNext(){ if(!tour) return; const now=performance.now(), T=tour; if(T.i+1>=T.S.length){ stopTour(); go('aerial'); return; } jumpTo(T.i+1,0,now); }
+function tourStepPrev(){ if(!tour) return; const now=performance.now(), T=tour, el=(T.paused?T.pauseAt:now)-T.t0; jumpTo(el>2500||T.i<=0?Math.max(0,T.i):T.i-1,0,now); }
+function tourPause(on){ if(!tour) return; const T=tour, now=performance.now(); if(on===T.paused) return;
+  if(on){ T.paused=true; T.pauseAt=now; tPlay.textContent='▶'; tPlay.setAttribute('aria-label','재생'); }
+  else { T.paused=false; T.t0+=now-T.pauseAt; const st=T.S[T.i]; if(st){ st.from={p:camera.position.clone(),t:controls.target.clone()}; T.blendAt=now; } tPlay.textContent='⏸'; tPlay.setAttribute('aria-label','일시정지'); } }
 function tourTick(now){
-  const T=tour; if(T.i<0||now-T.t0>=T.S[T.i].dur){
-    T.i++; if(T.i>=T.S.length){ stopTour(); go('aerial'); return; }
-    const st=T.S[T.i]; st.setup&&st.setup(); prepStep(st); T.t0=now;
-    if(st.end){ setRoofGlass(false); setWallGlass(false); setRoofShow(true); setCranes(true); go('aerial'); tourCap.innerHTML=st.cap(); return; }
-    st.from={p:camera.position.clone(),t:controls.target.clone()};
-  }
-  const st=T.S[T.i]; if(st.end) return;
-  const k=(now-T.t0)/st.dur, pose=stepPose(st,k), blend=Math.min(1,(now-T.t0)/1800), e=ease(blend);
+  const T=tour;
+  if(T.i<0) jumpTo(0,0,now);
+  const cur=T.paused?T.pauseAt:now;
+  if(!T.paused&&cur-T.t0>=T.S[T.i].dur){ if(T.i+1>=T.S.length){ stopTour(); go('aerial'); return; } jumpTo(T.i+1,0,now); }
+  const st=T.S[T.i], el=(T.paused?T.pauseAt:now)-T.t0, k=el/st.dur;
+  if(!T.seeking) tSeek.value=String(Math.round((T.starts[T.i]+Math.min(el,st.dur))/T.total*1000));
+  tTime.textContent=fmt(T.starts[T.i]+Math.min(el,st.dur))+' / '+fmt(T.total);
+  if(st.end){ tourCap.innerHTML=st.cap()+`<small>${T.i+1} / ${T.S.length}</small>`; return; }
+  if(T.paused){ // 일시정지 중에는 화면을 자유롭게 돌려볼 수 있음 (건너뛰기 한 경우만 해당 위치로 이동)
+    if(T.snap){ T.snap=false; const q=stepPose(st,k); camera.position.copy(q.p); controls.target.copy(q.t); tourCap.innerHTML=st.cap(camera.position,k)+`<small>${T.i+1} / ${T.S.length}</small>`; }
+    return; }
+  const pose=stepPose(st,k), since=now-Math.max(T.t0,T.blendAt||0), e=ease(Math.min(1,since/1800));
   camera.position.lerpVectors(st.from.p,pose.p,e); controls.target.lerpVectors(st.from.t,pose.t,e);
   tourCap.innerHTML=st.cap(camera.position,k)+`<small>${T.i+1} / ${T.S.length}</small>`;
 }
 bTour.addEventListener('click',()=>{ tour?stopTour():startTour(); });
-controls.addEventListener('start',()=>{ if(tour) stopTour(); });
+document.getElementById('tNext').addEventListener('click',tourStepNext);
+document.getElementById('tPrev').addEventListener('click',tourStepPrev);
+tPlay.addEventListener('click',()=>tourPause(!tour.paused));
+tSeek.addEventListener('input',()=>{ if(!tour) return; tour.seeking=true; seekTime(+tSeek.value/1000*tour.total,performance.now()); tour.blendAt=0; });
+tSeek.addEventListener('change',()=>{ if(tour) tour.seeking=false; });
+addEventListener('keydown',e=>{ if(!tour||e.target.closest&&e.target.closest('input,textarea')) return;
+  if(e.key==='ArrowRight'){ e.preventDefault(); tourStepNext(); } else if(e.key==='ArrowLeft'){ e.preventDefault(); tourStepPrev(); } else if(e.key===' '){ e.preventDefault(); tourPause(!tour.paused); } });
+controls.addEventListener('start',()=>{ if(tour) tourPause(true); }); // 화면을 직접 돌리면 일시정지 (▶로 이어보기)
 controls.addEventListener('start',()=>{tween=null;});
 
 /* ---------- 부1동 interior mode ---------- */
