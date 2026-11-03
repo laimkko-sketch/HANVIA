@@ -29,11 +29,11 @@ function tank(x1,x2,z,w,h,water,o={}){
   const L=x2-x1,cx=(x1+x2)/2,t=0.06,col=o.col??0x8796a4;
   box(L,h,t,col,cx,0,z-w/2);box(L,h,t,col,cx,0,z+w/2);box(t,h,w,col,x1,0,z);box(t,h,w,col,x2,0,z);
   box(L,0.06,w,col,cx,0,z);
-  const wm=new THREE.Mesh(new THREE.BoxGeometry(L-0.1,h*0.78,w-0.1),M(water,{t:0.55,r:0.15,m:0}));wm.position.set(cx,h*0.39+0.03,z);add(wm);
+  const wf=o.wf??0.78;const wm=new THREE.Mesh(new THREE.BoxGeometry(L-0.1,h*wf,w-0.1),M(water,{t:0.55,r:0.15,m:0}));wm.position.set(cx,h*wf/2+0.03,z);add(wm);
   box(L,0.06,0.18,col,cx,h,z-w/2);box(L,0.06,0.18,col,cx,h,z+w/2);
   const n=Math.floor(L/0.6);const g=new THREE.CylinderGeometry(0.05,0.05,w-0.12,12);g.rotateX(Math.PI/2);
   const im=new THREE.InstancedMesh(g,M(C.roll,{m:.6}),n);const mt=new THREE.Matrix4();
-  for(let i=0;i<n;i++){mt.makeTranslation(x1+L*(i+.5)/n,h*0.7,z);im.setMatrixAt(i,mt);} add(im);
+  for(let i=0;i<n;i++){mt.makeTranslation(x1+L*(i+.5)/n,o.rh??h*0.7,z);im.setMatrixAt(i,mt);} add(im);
 }
 function rail(pts,y,h=1.1){for(let i=0;i<pts.length-1;i++){const [a,b]=[pts[i],pts[i+1]];const dx=b[0]-a[0],dz=b[1]-a[1],L=Math.hypot(dx,dz),ang=Math.atan2(dz,dx);
   const m=box(L,0.05,0.05,C.yellow,(a[0]+b[0])/2,y+h,(a[1]+b[1])/2);m.rotation.y=-ang;const m2=box(L,0.04,0.04,C.yellow,(a[0]+b[0])/2,y+h/2,(a[1]+b[1])/2);m2.rotation.y=-ang;
@@ -202,6 +202,15 @@ function person(x,y,z,vest=0xf39c12){
   const h=new THREE.Mesh(new THREE.SphereGeometry(0.13,14,10),M(0xe0b090,{m:0,r:.9}));h.position.set(x,y+1.72,z);add(h);
   const hm=new THREE.Mesh(new THREE.SphereGeometry(0.15,14,8,0,Math.PI*2,0,Math.PI/2),M(0xf1c40f,{m:0,r:.5}));hm.position.set(x,y+1.76,z);add(hm);
 }
+function seated(x,z,face=-1,vest=0x2e86c1){ // 의자에 앉은 작업자 (face: 시선 z방향 ±1)
+  box(0.45,0.06,0.45,0x2c3e50,x,0.45,z);box(0.45,0.5,0.06,0x2c3e50,x,0.5,z-face*0.22);for(const dx of [-0.18,0.18])for(const dz of [-0.18,0.18])box(0.04,0.45,0.04,0x7f8c8d,x+dx,0,z+dz);
+  for(const dx of [-0.1,0.1]){box(0.15,0.15,0.45,0x2c3e50,x+dx,0.5,z+face*0.18);box(0.15,0.48,0.15,0x2c3e50,x+dx,0.02,z+face*0.4);}
+  box(0.44,0.62,0.26,vest,x,0.62,z,{m:0,r:.8});
+  for(const dx of [-0.25,0.25]){const a=box(0.08,0.08,0.4,vest,x+dx,1.0,z+face*0.18);}
+  const h=new THREE.Mesh(new THREE.SphereGeometry(0.13,14,10),M(0xe0b090,{m:0,r:.9}));h.position.set(x,1.4,z);add(h);
+  const hm=new THREE.Mesh(new THREE.SphereGeometry(0.15,14,8,0,Math.PI*2,0,Math.PI/2),M(0xf1c40f,{m:0,r:.5}));hm.position.set(x,1.44,z);add(hm);
+}
+function desk(x,z,w=1.2,d=0.6){box(w,0.04,d,0xc8a878,x,0.74,z,{m:0,r:.7});for(const dx of [-w/2+0.05,w/2-0.05])for(const dz of [-d/2+0.05,d/2-0.05])box(0.04,0.74,0.04,0x5d6d7e,x+dx,0,z+dz);}
 function web(ax,ay,bx,by,z,w=1.4){const dx=bx-ax,dy=by-ay,L=Math.hypot(dx,dy);const g=new THREE.Group();g.position.set((ax+bx)/2,(ay+by)/2,z);g.rotation.z=Math.atan2(dy,dx);
   const m=new THREE.Mesh(new THREE.PlaneGeometry(L,w),M(0xf2e6c4,{t:.85,ds:true,m:0}));m.rotation.x=Math.PI/2;g.add(m);add(g);}
 function heaterPlate(x0,x1,kw){ // 합판히터: 2층 보에 매달린 판형 히터 (시트 상부 FL+1.28~1.42)
@@ -241,7 +250,7 @@ for(let i=0;i<LST.length-1;i++)heaterPlate(LST[i+1]+0.55,LST[i]-0.55);
  for(const y of [-0.9,0.2])cyl(0.06,1.7,C.steel,107.65,y,ZU,'z',{m:.8});
  box(0.15,PIT.d+0.9,0.15,C.frame,107.8,-PIT.d,ZU-0.9);box(0.15,PIT.d+0.9,0.15,C.frame,107.8,-PIT.d,ZU+0.9);
  rail([[PIT.x0,PIT.z0],[PIT.x1,PIT.z0]],0,1.0);rail([[PIT.x0,PIT.z1],[PIT.x1,PIT.z1]],0,1.0);
- person(104.35,-PIT.d+0.1,ZU+1.4);}
+ }
 // 2층 작업대 (그레이팅)
 const gM=M(0x6b7785,{t:0.82,m:.3,r:.6});
 box(DX1-DX0,0.12,(ZU-1.3)-DZ0,0,(DX0+DX1)/2,LEL-0.12,(DZ0+ZU-1.3)/2,{mat:gM});
@@ -261,7 +270,8 @@ rail([[95.2,DZ1],[DX0,DZ1],[DX0,DZ0],[DX1,DZ0],[DX1,DZ1],[96.6,DZ1]],LEL);
 // 2층 예비 원단 적치 (북측)
 for(const x of [88.5,92.5,96.5,100.5,104.5]){box(1.8,0.12,1.2,0x9c7a4a,x,LEL,DZ0+1.1);for(const dx of [-0.45,0.45])cyl(0.4,1.4,dx<0?0xe8d6a8:0xb7c7d6,x+dx,LEL+0.52,DZ0+1.1,'z',{m:.05,r:.8});}
 // 2층 원단 연결(투입) 작업자 — 항시 상주
-person(106.6,LEL,ZU-1.9);person(99.0,LEL,ZU-1.9,0x2e86c1);person(94.9,LEL,ZU+1.6);
+person(100.5,LEL,ZU-1.9,0x2e86c1);   // 인라인 2층 작업자 1명
+person(99.2,0,ZU-2.1);               // 1층 작업자 1명 (라인 북측) (합판히터·라미롤 관리)
 end();
 
 /* ===== 9. 엠보롤 성형 =====
@@ -288,12 +298,27 @@ cyl(0.09,1.7,C.steel,82.5,0.14,ZU,'z',{m:.9});
  for(let i=0;i<n;i++){const t=(i+.5)/n;mt.makeTranslation(x1+(x2-x1)*t,y1+(y2-y1)*t-0.06,ZU);im.setMatrixAt(i,mt);}im.castShadow=true;add(im);
  for(const dz of [-0.8,0.8]){const r=box(L,0.14,0.08,C.frame,(x1+x2)/2,(y1+y2)/2-0.17,ZU+dz);r.rotation.z=-ang;}
  for(const x of [79.5,80.7,81.9])for(const dz of [-0.8,0.8])box(0.08,y1+(x1-x)/(x1-x2)*(y2-y1)-0.2,0.08,C.frame,x,0,ZU+dz);}
+// 엠보롤 앞 작업자
+person(84.6,0,ZU+1.7);
+// 엠보롤~수세조 사이: 라인장 책상·보드판 (최종 두께 측정·관리)
+desk(80.7,ZU+2.45); seated(80.7,ZU+3.0,-1,0x1f4e8c);
+box(0.25,0.08,0.18,0x95a5a6,80.35,0.78,ZU+2.4,{m:.6}); box(0.3,0.02,0.22,0xffffff,81.0,0.78,ZU+2.45,{m:0}); // 두께 측정기·기록지
+{ const bx=82.2,bz=ZU+2.6; for(const dx of [-0.55,0.55])box(0.05,1.75,0.05,0x7f8c8d,bx+dx,0,bz); box(1.25,0.85,0.04,0xf7f9fa,bx,0.95,bz,{m:0,r:.4}); box(1.3,0.04,0.06,0x7f8c8d,bx,1.8,bz);
+  for(let i=0;i<4;i++)box(0.7-i*0.1,0.02,0.045,[0x2c3e50,0xc0392b,0x2c3e50,0x2e86c1][i],bx-0.15,1.55-i*0.14,bz-0.005,{m:0}); }
+// 엠보롤 상단 라인 속도 표시판 (검정 바탕·빨간 글씨)
+{ const c=document.createElement('canvas');c.width=512;c.height=192;const x=c.getContext('2d');x.fillStyle='#0b0b0b';x.fillRect(0,0,512,192);x.strokeStyle='#444';x.lineWidth=8;x.strokeRect(4,4,504,184);
+  x.fillStyle='#ff2a1a';x.font='bold 112px "Arial Black",Arial,sans-serif';x.textAlign='center';x.textBaseline='middle';x.shadowColor='#ff3b2a';x.shadowBlur=18;x.fillText('35m/min',256,100);
+  const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=8;t.wrapS=THREE.RepeatWrapping;t.repeat.x=-1; // 거울 기저 보정
+  const sm=new THREE.MeshStandardMaterial({map:t,emissive:0xffffff,emissiveMap:t,emissiveIntensity:0.5,roughness:.5});
+  const sx=84.0,sy=2.75; box(1.02,0.4,0.06,0x111111,sx,sy-0.2,ZU,{m:.3});
+  for(const sgn of [1,-1]){const m=new THREE.Mesh(new THREE.PlaneGeometry(0.96,0.36),sm);m.position.set(sx,sy,ZU+sgn*0.035);if(sgn<0)m.rotation.y=Math.PI;add(m);}
+  for(const dz of [-0.9,0.9])box(0.05,sy-0.2,0.05,C.frame,sx,0,ZU+dz); box(0.05,0.05,1.85,C.frame,sx,sy-0.22,ZU); }
 end();
 
 /* ===== 10. 수세조 ===== */
 begin('wash');
-tank(66.6,78.9,ZU,2.8,1.1,0x3fa7d6);   // 수세조 (가이드롤 구간까지 연장·확대)
-for(const x of [68,70.5,73,75.5,78])cyl(0.08,2.8,C.steel,x,0.66,ZU,'z',{m:.8}); // 누름 가이드롤: 시트를 물속으로 눌러 통과
+tank(66.6,78.9,ZU,2.8,1.1,0x3fa7d6,{wf:0.62,rh:0.62}); // 수위 낮춤(≈0.71 m): 시트는 가이드롤 위로 진행하며 물에 살짝 잠김   // 수세조 (가이드롤 구간까지 연장·확대)
+for(const x of [68,70.5,73,75.5,78])cyl(0.08,2.8,C.steel,x,1.7,ZU,'z',{m:.8});
 box(1.2,1.4,1.0,0x5e7d9a,72.7,0,ZU+2.3);
 end();
 
@@ -334,6 +359,8 @@ cyl(0.2,1.5,0xd0d5da,23.5,1.25,ZL,'z',{m:.9});cyl(0.2,1.5,0x2a2f35,23.9,1.25,ZL,
 box(1.0,0.4,1.0,0xe8e2c0,23.7,2.2,ZL);                  // 도료 팬
 box(3.0,1.8,1.9,0xc9cfd5,26.3,0,ZL,{m:.4});         // 건조기 3m
 cyl(0.25,1.2,0x9aa3ab,26.3,2.4,ZL,'y');
+// U-TURN 후 UV 롤코팅·경화 진입부: 작은 책상 + 작업자
+desk(18.2,ZL+2.3,0.9,0.5); seated(18.2,ZL+2.8,-1,0x27ae60);
 end();
 
 /* ===== 14. UV 경화 ===== */
@@ -466,6 +493,8 @@ const carriage=box(0.5,0.5,0.6,0x2f3b47,WR.x+1.3,0.2,WR.z);
 const filmRoll=cyl(0.12,0.5,0xf4f8ff,WR.x+1.05,0.45,WR.z,'y',{m:0,r:.2});
 box(0.8,1.4,0.6,0x34495e,WR.x+1.6,0,WR.z+1.4);
 for(const [a,b] of [[[WR.x-1.6,WR.z-1.7],[WR.x+2.2,WR.z-1.7]],[[WR.x-1.6,WR.z+1.7],[WR.x+0.9,WR.z+1.7]]])rail([a,b],0,0.9);
+// 밴딩 작업자 + 반자동 밴딩기·PP밴드 롤
+person(113.2,0,28.2,0xd35400); box(0.6,0.8,0.5,0x2f3b47,114.2,0,28.2,{m:.4}); cyl(0.22,0.12,0xe8e8e0,114.2,0.86,28.2,'z',{m:0});
 end();
 
 // 팔레트 적재장 (래핑 완료 팔레트 2단 적재)
@@ -582,7 +611,7 @@ function sheetPiece(a,b,mat,per){const dx=b[0]-a[0],dy=b[1]-a[1],L=Math.hypot(dx
   const m=new THREE.Mesh(g,mat);m.position.set((a[0]+b[0])/2,(a[1]+b[1])/2,ZU);m.rotation.z=Math.atan2(dy,dx);scene.add(m);return m;}
 sheetPiece([LAMI4,1.06],[111,1.06],graySheetM,1.6);
 const nx=EMB.nx;
-for(const [a,b] of [[[nx+0.1,1.06],[LAMI4,1.06]],[[nx,0.98],[nx+0.1,1.06]],[[nx,0.5],[nx,0.98]],[[82.55,0.22],[nx,0.5]],[[79.3,1.05],[82.55,0.22]],[[78.6,0.55],[79.3,1.05]],[[67.0,0.55],[78.6,0.55]],[[66.3,1.06],[67.0,0.55]],[[63,1.06],[66.3,1.06]]])sheetPiece(a,b,woodSheetM,1.8);
+for(const [a,b] of [[[nx+0.1,1.06],[LAMI4,1.06]],[[nx,0.98],[nx+0.1,1.06]],[[nx,0.5],[nx,0.98]],[[82.55,0.22],[nx,0.5]],[[78.9,1.0],[82.55,0.2]],[[78.0,0.715],[78.9,1.0]],[[67.3,0.715],[78.0,0.715]],[[66.3,1.06],[67.3,0.715]],[[63,1.06],[66.3,1.06]]])sheetPiece(a,b,woodSheetM,1.8);
 // 원장 (길로틴 이후 → 어닐링 → U-TURN → UV → 수조이송 → 프레스)
 const uturn=[];for(let i=0;i<=16;i++){const t=Math.PI*i/16;uturn.push([UC.x-UC.r*Math.sin(t),1.06,UC.z-UC.r*Math.cos(t)]);}
 const pathA=polyPath([[64.2,1.06,ZU],[52.6,1.06,ZU],[52.0,0.75,ZU],[19.5,0.75,ZU],[19.0,1.06,ZU],...uturn,[27.9,1.06,ZL],[28.0,1.12,ZL],[38.2,1.12,ZL],[45.4,1.06,ZL],[45.8,0.72,ZL],[58.6,0.72,ZL],[59.0,1.06,ZL],[61.6,1.03,ZL],[61.6,1.03,27.8],[65.1,1.03,27.8]]);
