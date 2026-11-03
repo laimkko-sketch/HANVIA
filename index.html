@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#E6EAEC">
-<title>HANVIA 공장 3D</title>
+<title>(주)HANVIA 공장 3D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -114,7 +114,7 @@ dd{font-variant-numeric:tabular-nums;line-height:1.45}
 <div id="labels"></div>
 
 <details class="panel" id="panel" open>
-  <summary class="tb-head"><div><h1>HANVIA 공장 신축공사</h1><p class="m-hint">부1동을 탭하면 내부를 볼 수 있습니다</p></div><span class="toggle-ico"></span></summary>
+  <summary class="tb-head"><div><h1>(주)HANVIA 공장 신축공사</h1><p class="m-hint">부1동을 탭하면 내부를 볼 수 있습니다</p></div><span class="toggle-ico"></span></summary>
   <div class="site">전남 장성군 삼서면 두월리 916-1 일원 · 공장 3D 모델<br><span class="num">건물배치도 S 1/1000 · 평면·입면·단면 기준</span></div>
   <dl>
     <div><dt>주동 (2개 동)</dt><dd><span class="num">150.0 × 25.0 m</span> · 동당 <span class="num">3,750 m²</span><br>X1–X31 @5 m, Y1–Y6 @5 m</dd></div>
@@ -122,7 +122,7 @@ dd{font-variant-numeric:tabular-nums;line-height:1.45}
     <div><dt>외장</dt><dd>T125 내화판넬 벽체, T225 내화판넬 지붕, 박공지붕</dd></div>
     <div><dt>호이스트</dt><dd>동당 4대: <span class="num">3t ×2, 2t ×2</span> (노란색)<br>북측동은 3대를 인라인 합지 2층부 상부에 집중 배치</dd></div>
     <div><dt>개구부</dt><dd>행가도어 <span class="num">5.0 × 5.0 m</span> 2개소, 하이샤시 창호 2단</dd></div>
-    <div><dt>회사·브랜드</dt><dd>HANVIA (구 PR TECH) · 브랜드 VIDAN 비단<br>지붕 로고 · 정문 명판(진입로변)</dd></div>
+    <div><dt>회사·브랜드</dt><dd>(주)HANVIA · 브랜드 VIDAN 비단<br>지붕 로고 · 정문 명판(진입로변)</dd></div>
     <div><dt>정문·펜스</dt><dd>진입로와 대지 내 통로 연결, 문주·차단기 2기·경비실<br>대지 경계 전체 녹색 메쉬펜스 H 1.8 m</dd></div>
     <div><dt>생산 설비</dt><dd>북측동: LVT 인라인 라인 (New Machine V01)<br>반바리·믹서 → 압출·캘린더 → 인라인 합지 2층 → 엠보·수세 → 어닐링 → UV → 톰슨프레스 → 검사·포장 → 래핑 → 적재</dd></div>
     <div><dt>내부 바닥</dt><dd>녹색 에폭시 · <b style="color:#e0b000">노란 선</b> 보행자 통로 · <b>흰 선·화살표</b> 지게차 통로 · 흰 점선 향후 설비 예정 구역</dd></div>
@@ -219,7 +219,7 @@ function nameplateTex(){
   g.font='italic 400 44px "Malgun Gothic","Apple SD Gothic Neo",sans-serif'; g.fillStyle='#c9c4b8'; g.fillText('비단길 꽃길만 걷길 바라는 마음',520,540);
   g.fillStyle='#b8871b'; g.fillRect(1260,110,4,420);
   g.fillStyle='#e1262c'; let fs=170; do{ g.font=`italic 900 ${fs}px "Arial Black","Arial",sans-serif`; fs-=4; } while(g.measureText('HANVIA').width>620); g.fillText('HANVIA',1330,350);
-  g.font='600 58px "Arial",sans-serif'; g.fillStyle='#f4f1ea'; g.fillText('HANVIA CO., LTD.',1335,450);
+  g.font='600 58px "Arial",sans-serif'; g.fillStyle='#f4f1ea'; g.font='700 64px "Malgun Gothic","Apple SD Gothic Neo",Arial,sans-serif'; g.fillText('(주)HANVIA',1335,450);
   g.font='400 40px "Arial",sans-serif'; g.fillStyle='#c9c4b8'; g.fillText('DECO TILE · LVT · LLT',1340,535);
   const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; t.anisotropy=8; return t;
 }
