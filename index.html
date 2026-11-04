@@ -861,14 +861,22 @@ function buildLab(g,{floorText,seg,Y}){
       x.font='600 34px Arial,sans-serif'; x.fillText('AUTHORIZED PERSONNEL ONLY',w/2,535); },1024,560,1.9,1.04,DOOR_P.u+1.75,1.75,V0-0.075,Math.PI);
   sign((x,w,h)=>{ x.fillStyle='#14306b'; x.fillRect(0,0,w,h); x.fillStyle='#fff'; x.font='900 110px "Arial Black",Arial,sans-serif'; x.textAlign='center'; x.textBaseline='middle'; x.fillText('LAB',w/2,h/2+4); },512,192,1.1,0.41,DOOR_P.u,2.55,V0-0.075,Math.PI);
 
+  // --- 품질 슬로건 현수막 ---
+  const banner=(l1,l2,w,h,u,y,v,ry)=>{ sign((x,W,H)=>{ x.fillStyle='#ffffff'; x.fillRect(0,0,W,H); x.fillStyle='#14306b'; x.fillRect(0,0,W,18); x.fillRect(0,H-18,W,18);
+      x.fillStyle='#c0392b'; x.fillRect(0,18,26,H-36); x.fillRect(W-26,18,26,H-36);
+      x.textAlign='center'; x.textBaseline='middle'; x.fillStyle='#14306b'; x.font='900 112px "Malgun Gothic","Apple SD Gothic Neo",sans-serif'; x.fillText(l1,W/2,H*0.42);
+      x.fillStyle='#c0392b'; x.font='800 54px Arial,"Malgun Gothic",sans-serif'; x.fillText(l2,W/2,H*0.78); },2048,320,w,h,u,y,v,ry);
+    for(const s2 of [-1,1]){ const r=new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.02,0.06,8),mat(0x999999)); r.position.set(u+s2*(w/2-0.05),F+y+h/2,v+(ry===Math.PI?-0.02:0.02)); g.add(r); } };
+  banner('품질은 고객과의 약속입니다','QUALITY FIRST · ZERO DEFECT · HANVIA',5.2,0.82,136.8,2.0,V0-0.08,Math.PI);       // 외벽 (마당 쪽)
+  banner('정확한 측정 · 철저한 기록 · 끝까지 책임지는 품질','MEASURE RIGHT · RECORD EVERYTHING · OWN THE QUALITY',9.0,1.4,135.8,2.0,24.3,Math.PI); // 내부 북측 벽 (기둥 앞)
   // --- 바닥 라인테이프: 검사 대기 / 검사 진행중 (내부 셔터 양옆) + 사람 키 높이 RACK ---
-  const rack=(u,v)=>{ const fm=mat(0x1f6fb2,{m:.4}), sh=mat(0xd5d8dc,{m:.3});
-    for(const du of [-1.15,1.15]) for(const dv of [-0.3,0.3]) bx(0.06,1.8,0.06,0,u+du,0,v+dv,{mat:fm});
-    for(const y of [0.1,0.55,1.0,1.45]){ bx(2.36,0.04,0.66,0,u,y,v,{mat:sh});
-      for(let k=0;k<4;k++) bx(0.48,0.12+((k+y*10)%3)*0.05,0.4,[0x9c7a4a,0xc49a62,0x8d6e4a][k%3],u-0.85+k*0.57,y+0.04,v,{}); } };
-  const ZW=[127.0,129.4,7.7,9.3], ZP=[132.8,135.6,7.7,9.3];
-  tape(ZW,0xf2c200); tape(ZP,0x2e86c1); rack((ZW[0]+ZW[1])/2,8.6); rack((ZP[0]+ZP[1])/2,8.6);
-  floorText('검사 대기','#f2c200',(ZW[0]+ZW[1])/2,10.0,2.2,0,120); floorText('검사 진행중','#4aa3df',(ZP[0]+ZP[1])/2,10.0,2.4,0,120);
+  const rack=(u,v,L=7.08,D=1.32)=>{ const fm=mat(0x1f6fb2,{m:.4}), sh=mat(0xd5d8dc,{m:.3}), n=Math.round(L/2.36);
+    for(let k=0;k<=n;k++) for(const dv of [-D/2+0.03,D/2-0.03]) bx(0.07,1.8,0.07,0,u-L/2+L*k/n,0,v+dv,{mat:fm});
+    for(const y of [0.1,0.55,1.0,1.45]){ bx(L,0.04,D,0,u,y,v,{mat:sh});
+      for(let k=0;k<Math.floor(L/0.6);k++) for(const dv of [-0.33,0.33]) bx(0.5,0.12+((k+y*10+dv*3)%3)*0.05,0.5,[0x9c7a4a,0xc49a62,0x8d6e4a][(k+(dv>0?1:0))%3],u-L/2+0.35+k*0.6,y+0.04,v+dv,{}); } };
+  const ZW=[132.85,140.25,7.25,9.0], ZP=[132.85,140.25,9.7,11.45];
+  tape(ZW,0xf2c200); tape(ZP,0x2e86c1); rack((ZW[0]+ZW[1])/2,(ZW[2]+ZW[3])/2); rack((ZP[0]+ZP[1])/2,(ZP[2]+ZP[3])/2);
+  floorText('검사 대기','#f2c200',132.2,8.1,1.5,Math.PI/2,120); floorText('검사 진행중','#4aa3df',132.2,10.6,1.6,Math.PI/2,120);
 
   // --- 사무 공간 (동측): 부서장 책상 1 + 마주보는 책상 4 (파티션) ---
   const deskPC=(u,v,face,w=1.4,d=0.7)=>{ const q=new THREE.Group(); q.position.set(u,F,v); q.rotation.y=face; g.add(q);
@@ -902,36 +910,57 @@ function buildLab(g,{floorText,seg,Y}){
   const plank=(u,v,col)=>bx(1.22,0.006,0.18,col,u,0.9,v,{r:.5});
   for(const [k,u] of GU.entries()){ cal(u,GV-0.55); micro(u+0.35,GV+0.25); plank(u,GV+0.1,k?0x9a7046:0x8a7a68); plank(u,GV+0.35,k?0x7d5a3a:0xb3a189); }
   person(GU[0],GV-1.45,0,0xffffff); person(GU[1],GV+1.45,Math.PI,0xffffff);   // 석정반마다 측정 중 1명
+  // 인스톨링(시공) 시험 테이블 4000 × 2000 — 석정반 옆
+  { const u=141.95,v=GV, tm=mat(0xc8b89a,{r:.7}), lm=mat(0x3d5a73,{m:.5}); bx(4.0,0.06,2.0,0,u,0.75,v,{mat:tm,cs:true});
+    for(const du of [-1.9,0,1.9]) for(const dv of [-0.9,0.9]) bx(0.08,0.75,0.08,0,u+du,0,v+dv,{mat:lm});
+    for(let i=0;i<3;i++) for(let j=0;j<6;j++) bx(1.2,0.006,0.18,[0x9a7046,0x8a6038,0xa77d52][(i+j)%3],u-1.3+i*1.25+((j%2)*0.6-0.3)*0.0,0.81,v-0.5+j*0.19,{r:.5});
+    bx(0.5,0.08,0.3,0xd35400,u+1.4,0.81,v+0.6,{}); bx(0.3,0.04,0.3,0x95a5a6,u+1.4,0.81,v-0.6,{m:.6});
+    sign((x,w,h)=>{ x.fillStyle='#14306b'; x.fillRect(0,0,w,h); x.fillStyle='#fff'; x.font='700 52px "Malgun Gothic",sans-serif'; x.textAlign='center'; x.textBaseline='middle'; x.fillText('인스톨링 시험 테이블 4000×2000',w/2,h/2+2); },768,96,1.2,0.15,u,0.68,v-1.03,Math.PI); }
+  // 간이 회의용 원탁 + 의자 4
+  { const u=134.2,v=20.0; cy(0.65,0.04,0xd9cbb0,u,0.72,v,{seg:32}); cy(0.06,0.72,0x7f8c8d,u,0,v,{}); cy(0.35,0.03,0x555555,u,0,v,{seg:20});
+    for(let k=0;k<4;k++){ const a=k*Math.PI/2+Math.PI/4; chair(u+Math.cos(a)*1.0,v+Math.sin(a)*1.0,Math.atan2(-Math.cos(a),-Math.sin(a))); } }
+  // 문서 보관 캐비닛 (남는 벽면 채움)
+  { const cm=mat(0xb8c4cf,{m:.3,r:.5}), hm=mat(0x5d6d7e,{m:.6});
+    const cab=(u,v,ry)=>{ const q=bx(0.9,1.85,0.45,0,u,0,v,{mat:cm,cs:true,ry}); for(let k=0;k<4;k++){ const hdl=bx(0.2,0.025,0.03,0,u+(ry?Math.sign(Math.sin(ry))*-0.24:0),0.3+k*0.42,v+(ry?0:-0.24),{mat:hm,ry}); } };
+    for(let u=144.4;u<149.3;u+=0.92) cab(u,24.12,0);                 // 북동측 벽
+    for(let v=14.6;v<22.8;v+=0.92) cab(149.45,v,Math.PI/2);          // 동측 벽 (사무 공간 뒤)
+  }
 
   // --- 맨 좌측(서측, 입구에서 보아 왼쪽): 오븐 2 · 냉동기 1 · 시약 캐비닛 · UTM · 항온항습기 ---
   const WU=126.65; // 서측 벽면 설비 중심 u
-  const oven=(v)=>{ bx(0.95,1.75,1.0,0xd5d8dc,WU,0,v,{m:.4,cs:true}); bx(0.04,0.75,0.7,0x2b3a46,WU+0.5,0.75,v,{t:.75,r:.1}); bx(0.05,0.2,0.4,0x111111,WU+0.5,1.5,v,{});
-    bx(0.03,0.08,0.18,0xff3b2a,WU+0.53,1.56,v-0.05,{e:0xff2a1a,ei:1.5}); bx(0.06,0.04,0.5,0x95a5a6,WU+0.52,1.25,v,{m:.8}); };
-  oven(23.3); oven(22.05);
-  bx(0.9,1.95,1.2,0xf4f6f7,WU,0,20.6,{r:.4,cs:true}); bx(0.03,0.5,0.06,0x95a5a6,WU+0.47,1.1,20.15,{m:.8}); bx(0.04,0.14,0.3,0x0b2a3a,WU+0.47,1.75,20.6,{e:0x2aa8ff,ei:1});
-  sign((x,w,h)=>{ x.fillStyle='#e8f6ff'; x.fillRect(0,0,w,h); x.fillStyle='#1f4e8c'; x.font='800 66px "Malgun Gothic",sans-serif'; x.textAlign='center'; x.textBaseline='middle'; x.fillText('냉동기 −30℃',w/2,h/2); },512,128,0.7,0.175,WU+0.47,1.5,20.6,Math.PI/2);
-  sign((x,w,h)=>{ x.fillStyle='#fff'; x.fillRect(0,0,w,h); x.fillStyle='#1f4e8c'; x.font='800 66px "Malgun Gothic",sans-serif'; x.textAlign='center'; x.textBaseline='middle'; x.fillText('오븐 (항온 건조기)',w/2,h/2); },512,128,0.7,0.175,WU+0.51,1.82,22.68,Math.PI/2);
-  person(WU+1.35,20.6,-Math.PI/2,0xffffff);   // 냉동기 앞 1명
+  const WU2=126.85; // 2배 크기 설비 중심 u (벽면 126.15 ~ 127.55)
+  const oven=(v)=>{ bx(1.4,2.2,2.0,0xd5d8dc,WU2,0,v,{m:.4,cs:true}); for(const dv of [-0.48,0.48]){ bx(0.04,0.95,0.8,0x2b3a46,WU2+0.71,0.85,v+dv,{t:.75,r:.1}); bx(0.06,0.04,0.6,0x95a5a6,WU2+0.73,1.9,v+dv,{m:.8}); }
+    bx(0.05,0.25,0.6,0x111111,WU2+0.71,1.95,v,{}); bx(0.03,0.09,0.25,0xff3b2a,WU2+0.74,2.02,v-0.1,{e:0xff2a1a,ei:1.5}); };
+  oven(23.25); oven(21.15);
+  bx(1.3,2.2,2.4,0xf4f6f7,WU2-0.05,0,18.75,{r:.4,cs:true}); for(const dv of [-0.6,0.6]){ bx(0.03,1.9,0.02,0xcfd6dd,WU2+0.61,0.15,18.75+dv*0.02,{}); bx(0.03,0.6,0.06,0x95a5a6,WU2+0.63,1.1,18.75+dv-0.45*Math.sign(dv),{m:.8}); }
+  bx(0.04,0.16,0.4,0x0b2a3a,WU2+0.62,1.95,18.75,{e:0x2aa8ff,ei:1});
+  sign((x,w,h)=>{ x.fillStyle='#e8f6ff'; x.fillRect(0,0,w,h); x.fillStyle='#1f4e8c'; x.font='800 66px "Malgun Gothic",sans-serif'; x.textAlign='center'; x.textBaseline='middle'; x.fillText('냉동기 −30℃',w/2,h/2); },512,128,0.9,0.225,WU2+0.62,1.6,18.75,Math.PI/2);
+  sign((x,w,h)=>{ x.fillStyle='#fff'; x.fillRect(0,0,w,h); x.fillStyle='#1f4e8c'; x.font='800 66px "Malgun Gothic",sans-serif'; x.textAlign='center'; x.textBaseline='middle'; x.fillText('오븐 (항온 건조기)',w/2,h/2); },512,128,0.9,0.225,WU2+0.72,1.66,22.2,Math.PI/2);
+  // 냉장고 (시료·시약 보관)
+  bx(0.8,1.85,0.9,0xe5e8e8,126.6,0,16.75,{r:.35,cs:true}); bx(0.03,0.02,0.86,0x95a5a6,127.01,1.2,16.75,{}); bx(0.03,0.4,0.05,0x95a5a6,127.02,0.75,16.4,{m:.8}); bx(0.03,0.25,0.05,0x95a5a6,127.02,1.4,16.4,{m:.8});
+  sign((x,w,h)=>{ x.fillStyle='#fff'; x.fillRect(0,0,w,h); x.fillStyle='#1f4e8c'; x.font='800 66px "Malgun Gothic",sans-serif'; x.textAlign='center'; x.textBaseline='middle'; x.fillText('냉장고',w/2,h/2); },384,128,0.5,0.17,127.02,1.62,16.85,Math.PI/2);
+  person(128.6,18.75,-Math.PI/2,0xffffff);   // 냉동기 앞 1명
   // 시약 캐비닛 (위험 문구)
-  bx(0.6,1.8,1.1,0xf1c40f,WU-0.15,0,18.7,{r:.5,cs:true}); bx(0.02,1.7,0.02,0x7d6608,WU+0.16,0.05,18.7,{});
+  bx(0.6,1.8,1.1,0xf1c40f,WU-0.15,0,15.2,{r:.5,cs:true}); bx(0.02,1.7,0.02,0x7d6608,WU+0.16,0.05,15.2,{});
   sign((x,w,h)=>{ x.fillStyle='#f1c40f'; x.fillRect(0,0,w,h); x.fillStyle='#c0392b'; x.fillRect(0,0,w,150);
       x.fillStyle='#fff'; x.font='900 96px "Malgun Gothic",sans-serif'; x.textAlign='center'; x.textBaseline='middle'; x.fillText('위 험',w/2,62); x.font='700 44px Arial,sans-serif'; x.fillText('DANGER',w/2,122);
       x.fillStyle='#111'; x.beginPath(); x.moveTo(w/2,190); x.lineTo(w/2+120,400); x.lineTo(w/2-120,400); x.closePath(); x.fill(); x.fillStyle='#f1c40f'; x.beginPath(); x.moveTo(w/2,225); x.lineTo(w/2+90,382); x.lineTo(w/2-90,382); x.closePath(); x.fill();
       x.fillStyle='#111'; x.font='900 150px Arial,sans-serif'; x.fillText('!',w/2,320);
-      x.font='800 64px "Malgun Gothic",sans-serif'; x.fillText('시약 보관함',w/2,480); x.font='600 40px "Malgun Gothic",sans-serif'; x.fillText('인화성 · 부식성 · 유독물',w/2,550); x.fillText('화기엄금 · 관계자외 취급금지',w/2,606); },512,660,0.8,1.03,WU+0.165,1.05,18.7,Math.PI/2);
+      x.font='800 64px "Malgun Gothic",sans-serif'; x.fillText('시약 보관함',w/2,480); x.font='600 40px "Malgun Gothic",sans-serif'; x.fillText('인화성 · 부식성 · 유독물',w/2,550); x.fillText('화기엄금 · 관계자외 취급금지',w/2,606); },512,660,0.8,1.03,WU+0.165,1.05,15.2,Math.PI/2);
   // 항온항습기
-  bx(0.85,2.0,1.3,0xecf0f1,WU-0.05,0,12.6,{r:.5,cs:true}); for(let k=0;k<6;k++) bx(0.02,0.04,1.0,0x95a5a6,WU+0.38,1.3+k*0.08,12.6,{});
-  bx(0.03,0.22,0.36,0x0b2a3a,WU+0.39,1.62,12.95,{e:0x2aff8a,ei:.9});
-  sign((x,w,h)=>{ x.fillStyle='#fff'; x.fillRect(0,0,w,h); x.fillStyle='#14306b'; x.font='800 62px "Malgun Gothic",sans-serif'; x.textAlign='center'; x.textBaseline='middle'; x.fillText('항온항습기',w/2,46); x.font='600 40px Arial,sans-serif'; x.fillStyle='#c0392b'; x.fillText('23 ± 2℃  ·  50 ± 5 %RH',w/2,100); },512,128,0.8,0.2,WU+0.39,1.92,12.6,Math.PI/2);
+  bx(0.85,2.0,1.3,0xecf0f1,WU-0.05,0,11.75,{r:.5,cs:true}); for(let k=0;k<6;k++) bx(0.02,0.04,1.0,0x95a5a6,WU+0.38,1.3+k*0.08,11.75,{});
+  bx(0.03,0.22,0.36,0x0b2a3a,WU+0.39,1.62,12.1,{e:0x2aff8a,ei:.9});
+  sign((x,w,h)=>{ x.fillStyle='#fff'; x.fillRect(0,0,w,h); x.fillStyle='#14306b'; x.font='800 62px "Malgun Gothic",sans-serif'; x.textAlign='center'; x.textBaseline='middle'; x.fillText('항온항습기',w/2,46); x.font='600 40px Arial,sans-serif'; x.fillStyle='#c0392b'; x.fillText('23 ± 2℃  ·  50 ± 5 %RH',w/2,100); },512,128,0.8,0.2,WU+0.39,1.92,11.75,Math.PI/2);
 
   // --- 테두리 검사테이블 + 시험기 나열 ---
-  const table=(u0,u1,v,d=0.8)=>{ const tm=mat(0xf2f4f5,{r:.5}), lm=mat(0x7f8c8d,{m:.5}); bx(u1-u0,0.05,d,0,(u0+u1)/2,0.85,v,{mat:tm});
+  const table=(u0,u1,v,d=1.2)=>{ const tm=mat(0xf2f4f5,{r:.5}), lm=mat(0x7f8c8d,{m:.5}); bx(u1-u0,0.05,d,0,(u0+u1)/2,0.85,v,{mat:tm});
     const n=Math.max(2,Math.round((u1-u0)/1.6)+1); for(let k=0;k<n;k++) for(const dv of [-d/2+0.05,d/2-0.05]) bx(0.05,0.85,0.05,0,u0+0.05+(u1-u0-0.1)*k/(n-1),0,v+dv,{mat:lm});
     bx(u1-u0-0.1,0.03,d-0.1,0,(u0+u1)/2,0.25,v,{mat:lm}); };
-  const tableV=(v0,v1,u,d=0.8)=>{ const tm=mat(0xf2f4f5,{r:.5}), lm=mat(0x7f8c8d,{m:.5}); bx(d,0.05,v1-v0,0,u,0.85,(v0+v1)/2,{mat:tm});
+  const tableV=(v0,v1,u,d=1.2)=>{ const tm=mat(0xf2f4f5,{r:.5}), lm=mat(0x7f8c8d,{m:.5}); bx(d,0.05,v1-v0,0,u,0.85,(v0+v1)/2,{mat:tm});
     const n=Math.max(2,Math.round((v1-v0)/1.6)+1); for(let k=0;k<n;k++) for(const du of [-d/2+0.05,d/2-0.05]) bx(0.05,0.85,0.05,0,u+du,0,v0+0.05+(v1-v0-0.1)*k/(n-1),{mat:lm}); };
-  table(128.0,143.4,23.9); table(136.4,140.3,7.5); table(141.8,147.9,7.5); tableV(8.4,13.6,149.35);
-  const T=0.9, tv=23.9;
+  table(128.0,143.4,23.75); table(141.9,147.9,7.7); tableV(8.4,13.4,149.1);
+  for(const u of [129.5,132.6,135.8,139.0,142.2]) chair(u,22.6,0); for(const u of [143.3,146.4]) chair(u,8.85,Math.PI); for(const v of [9.6,12.2]) chair(147.9,v,Math.PI/2);
+  const T=0.9, tv=23.85;
   // 잔류압입 측정기
   const indent=(u,v)=>{ bx(0.45,0.08,0.4,0x2c3e50,u,T,v); bx(0.08,0.75,0.08,0x95a5a6,u,T+0.08,v+0.12,{m:.8}); bx(0.35,0.18,0.25,0x1f6fb2,u,T+0.6,v+0.02,{m:.3}); cy(0.03,0.25,0xcfd6dd,u,T+0.35,v,{m:.9});
     bx(0.12,0.12,0.02,0xffffff,u,T+0.66,v-0.115,{}); cy(0.05,0.03,0xb0b0b0,u,T+0.84,v,{}); };
@@ -946,24 +975,24 @@ function buildLab(g,{floorText,seg,Y}){
   const color=(u,v)=>{ bx(0.12,0.2,0.08,0x2c3e50,u,T,v); bx(0.2,0.12,0.15,0xecf0f1,u+0.25,T,v); };
   const scratch=(u,v)=>{ bx(0.6,0.12,0.35,0x7f8c8d,u,T,v,{m:.5}); bx(0.08,0.3,0.08,0x2c3e50,u,T+0.12,v); bx(0.3,0.03,0.25,0x9a7046,u+0.15,T+0.12,v); };
   const jig=(u,v)=>{ bx(0.65,0.012,0.65,0xd9cbb0,u,T,v); bx(0.6,0.006,0.6,0xa58b6f,u,T+0.012,v); };
-  indent(129.0,tv); indent(130.0,tv); thick(131.1,tv); thick(131.8,tv); scope(133.0,tv); scale_(134.4,tv); color(136.2,tv); scratch(137.8,tv); jig(139.6,tv); jig(141.0,tv); scope(149.35,10.0); thick(149.35,11.4); scale_(149.35,12.6);
-  scale_(137.0,7.5); thick(138.0,7.5); jig(139.4,7.5); scope(142.8,7.5); color(144.6,7.5); jig(146.6,7.5);
+  indent(129.0,tv); indent(130.0,tv); thick(131.1,tv); thick(131.8,tv); scope(133.0,tv); scale_(134.4,tv); color(136.2,tv); scratch(137.8,tv); jig(139.6,tv); jig(141.0,tv); scope(149.2,9.2); thick(149.2,10.9); scale_(149.2,12.5);
+  scope(142.8,7.75); color(144.6,7.75); jig(146.6,7.75);
   // UTM (만능재료시험기) — 바닥 설치형 + 제어 PC
-  { const u=WU+0.05,v=16.5, fm=mat(0x1f4e8c,{m:.4}), cm=mat(0xcfd6dd,{m:.9});
+  { const u=WU+0.05,v=13.55, fm=mat(0x1f4e8c,{m:.4}), cm=mat(0xcfd6dd,{m:.9});
     bx(0.9,0.6,0.7,0,u-0.05,0,v,{mat:fm,cs:true}); for(const dv of [-0.28,0.28]) bx(0.08,1.9,0.08,0,u-0.05,0.6,v+dv,{mat:cm}); bx(0.5,0.14,0.75,0,u-0.05,1.7,v,{mat:fm}); bx(0.5,0.2,0.75,0,u-0.05,2.5,v,{mat:fm});
     bx(0.12,0.12,0.1,0x2c3e50,u-0.05,1.45,v); bx(0.12,0.12,0.1,0x2c3e50,u-0.05,0.75,v); }
-  sign((x,w,h)=>{ x.fillStyle='#fff'; x.fillRect(0,0,w,h); x.fillStyle='#14306b'; x.font='800 60px Arial,sans-serif'; x.textAlign='center'; x.textBaseline='middle'; x.fillText('UTM',w/2,h/2); },256,96,0.45,0.17,WU+0.38,2.6,16.5,Math.PI/2);
+  sign((x,w,h)=>{ x.fillStyle='#fff'; x.fillRect(0,0,w,h); x.fillStyle='#14306b'; x.font='800 60px Arial,sans-serif'; x.textAlign='center'; x.textBaseline='middle'; x.fillText('UTM',w/2,h/2); },256,96,0.45,0.17,WU+0.38,2.6,13.55,Math.PI/2);
   // 인덕 라벨 (테이블 앞 소형 명찰)
   const tag=(t,u,v,ry)=>sign((x,w,h)=>{ x.fillStyle='#14306b'; x.fillRect(0,0,w,h); x.fillStyle='#fff'; x.font='700 46px "Malgun Gothic",sans-serif'; x.textAlign='center'; x.textBaseline='middle'; x.fillText(t,w/2,h/2+2); },512,80,0.62,0.1,u,0.8,v,ry);
-  [['잔류압입 측정기',129.5],['두께 측정기',131.45],['현미경',133.0],['전자저울',134.4],['색차계',136.3],['스크래치 시험기',137.8],['치수안정성 지그',140.3]].forEach(([t,u])=>tag(t,u,tv-0.41,Math.PI));
+  [['잔류압입 측정기',129.5],['두께 측정기',131.45],['현미경',133.0],['전자저울',134.4],['색차계',136.3],['스크래치 시험기',137.8],['치수안정성 지그',140.3]].forEach(([t,u])=>tag(t,u,tv-0.61,Math.PI));
 
   // --- 시험실 밖: 검사완료 제품 적재공간 (파레트 3개) + 라인테이프 ---
-  const SZ=[126.8,135.4,3.7,6.7]; tape(SZ,0xf2c200); tape([SZ[0]+0.12,SZ[1]-0.12,SZ[2]+0.12,SZ[3]-0.12],0x222222);
+  const SZ=[142.3,149.4,3.7,6.7]; tape(SZ,0xf2c200); tape([SZ[0]+0.12,SZ[1]-0.12,SZ[2]+0.12,SZ[3]-0.12],0x222222);
   const pw=new THREE.MeshStandardMaterial({color:0x9c7a4a,roughness:.9}), bxM=new THREE.MeshStandardMaterial({color:0xc49a62,roughness:.85}), film=new THREE.MeshStandardMaterial({color:0xe8f2ff,transparent:true,opacity:.4,roughness:.2,depthWrite:false});
-  for(const u of [128.6,131.1,133.6]){ bx(1.1,0.14,1.1,0,u,0,5.2,{mat:pw});
+  for(const u of [143.7,145.85,148.0]){ bx(1.1,0.14,1.1,0,u,0,5.2,{mat:pw});
     for(let l=0;l<4;l++) for(const [du,dv] of [[-0.27,-0.29],[0.27,-0.29],[-0.27,0.29],[0.27,0.29]]) bx(0.52,0.28,0.55,0,u+du,0.14+l*0.29,5.2+dv,{mat:bxM,cs:true});
     bx(1.15,1.22,1.15,0,u,0.13,5.2,{mat:film}); }
-  floorText('검사완료 제품 적재','#f2c200',131.1,4.15,3.6,0,110);
+  floorText('검사완료 제품 적재','#f2c200',145.85,4.15,3.6,0,110);
 }
 /* ---------- 북측동 생산설비 (New-Machine_V01 모델) + 바닥 동선 ---------- */
 /* 설비 원본 좌표(5동 X,Z) → 주동 북측 로컬 (u = 131.722 − X, v = 33.2 − Z) : 반바리·믹서가 X1 고층부, 적재장이 행가도어(마당) 쪽 */
@@ -1039,7 +1068,7 @@ function installLine(f){
   // 공정 라벨 (내부에서 또는 지붕을 끄면 표시)
   for(const [t,u,y,v] of [['반바리·슈퍼믹서 (2층 계량)',5.5,10.6,19.0],['압출기·캘린더',17.5,4.2,18.0],['인라인 합지 2층 (라미1~6)',34.0,6.6,18.0],
     ['엠보·수세조',53.0,3.2,17.7],['길로틴 커팅',67.0,4.6,17.7],['어닐링 수조 90→50→25℃',92.0,3.0,17.7],['UV 코팅·경화',100.0,4.4,12.2],['냉탕 수조이송',74.0,3.0,12.2],
-    ['톰슨프레스 ×2',62.0,6.6,7.5],['검사·박스포장',45.0,4.2,7.2],['자동 래핑기',19.7,4.2,2.7],['완제품 적재',9.5,4.6,5.9],['LAB 시험실 (품질관리)',137.5,4.6,15.5],['검사완료 제품 적재',131.0,3.0,5.1],['예비 공간',95.0,2.6,7.0]])
+    ['톰슨프레스 ×2',62.0,6.6,7.5],['검사·박스포장',45.0,4.2,7.2],['자동 래핑기',19.7,4.2,2.7],['완제품 적재',9.5,4.6,5.9],['LAB 시험실 (품질관리)',137.5,4.6,15.5],['검사완료 제품 적재',145.85,3.0,5.1],['예비 공간',95.0,2.6,7.0]])
     labels.push({el:mk('lbl crane',t),pos:()=>new THREE.Vector3(u,y,v).applyMatrix4(g.matrix),grp:'line'});
 }
 installLine(FACT[0]);
